@@ -35,10 +35,9 @@ namespace SmartHomeAutomation.API.Services
         public async Task<DeviceDto> CreateDeviceAsync(CreateDeviceDto createDeviceDto)
         {
             var device = _mapper.Map<Device>(createDeviceDto);
-            device.Status = "off";
+            device.Status = "OFF";
             device.IsOnline = true;
             device.CreatedAt = DateTime.UtcNow;
-            device.IsActive = true;
 
             await _unitOfWork.Devices.AddAsync(device);
             await _unitOfWork.SaveChangesAsync();

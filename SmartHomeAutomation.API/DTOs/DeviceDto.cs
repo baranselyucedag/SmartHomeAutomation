@@ -7,6 +7,7 @@ namespace SmartHomeAutomation.API.DTOs
         public string Type { get; set; }
         public string Status { get; set; }
         public bool IsOnline { get; set; }
+        public bool IsActive { get; set; }
         public string IpAddress { get; set; }
         public string MacAddress { get; set; }
         public string FirmwareVersion { get; set; }

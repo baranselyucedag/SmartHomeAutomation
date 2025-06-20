@@ -36,12 +36,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         console.error('Error loading dashboard:', error);
     }
 
-    // Device toggle functionality
+    // Device toggle functionality for room devices
     document.addEventListener('click', async function(e) {
         if (e.target.closest('.device-item')) {
             const deviceItem = e.target.closest('.device-item');
             const deviceId = deviceItem.dataset.deviceId;
             const currentState = deviceItem.classList.contains('active');
+
+            console.log('Device item clicked:', {deviceId, currentState}); // Debug
 
             try {
                 await fetchAPI(`${API.devices}/${deviceId}/toggle`, {
@@ -53,8 +55,67 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const deviceName = deviceItem.querySelector('span').textContent;
                 const isActive = deviceItem.classList.contains('active');
                 console.log(`${deviceName} is now ${isActive ? 'ON' : 'OFF'}`);
+                
+                // İstatistikleri güncelle
+                await updateStats();
             } catch (error) {
                 console.error('Error toggling device:', error);
+            }
+        }
+    });
+
+    // Device toggle functionality for device cards (new section)
+    document.addEventListener('click', async function(e) {
+        if (e.target.classList.contains('toggle-btn')) {
+            const toggleBtn = e.target;
+            const deviceId = toggleBtn.dataset.deviceId;
+            
+            console.log('Toggle button clicked:', {deviceId}); // Debug
+
+            if (!deviceId || deviceId === 'undefined') {
+                console.error('Device ID is undefined');
+                alert('Cihaz ID\'si geçersiz');
+                return;
+            }
+
+            // Visual feedback
+            const originalText = toggleBtn.textContent;
+            toggleBtn.textContent = 'İşleniyor...';
+            toggleBtn.disabled = true;
+
+            try {
+                const response = await fetchAPI(`${API.devices}/${deviceId}/toggle`, {
+                    method: 'POST'
+                });
+
+                console.log('Device toggle response:', response);
+
+                // Update button state
+                toggleBtn.classList.toggle('active');
+                const isActive = toggleBtn.classList.contains('active');
+                toggleBtn.textContent = isActive ? 'Kapat' : 'Aç';
+
+                // Update device status indicator
+                const deviceCard = toggleBtn.closest('.device-card');
+                const statusElement = deviceCard.querySelector('.device-status');
+                if (statusElement) {
+                    statusElement.classList.toggle('active');
+                    statusElement.classList.toggle('inactive');
+                    statusElement.textContent = isActive ? 'Aktif' : 'Pasif';
+                }
+
+                console.log(`Device ${deviceId} toggled successfully`);
+                
+                // İstatistikleri güncelle
+                await updateStats();
+            } catch (error) {
+                console.error('Error toggling device:', error);
+                alert(`Cihaz durumu değiştirilemedi: ${error.message}`);
+            } finally {
+                toggleBtn.disabled = false;
+                if (toggleBtn.textContent === 'İşleniyor...') {
+                    toggleBtn.textContent = originalText;
+                }
             }
         }
     });
@@ -63,8 +124,32 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.addEventListener('click', async function(e) {
         if (e.target.classList.contains('scene-trigger')) {
             const trigger = e.target;
-            const sceneId = trigger.dataset.sceneId;
-            const sceneName = trigger.parentElement.querySelector('h3').textContent;
+            
+            // Birden fazla yolla scene ID'yi almaya çalışalım
+            let sceneId = trigger.getAttribute('data-scene-id') || 
+                         trigger.dataset.sceneId || 
+                         trigger.getAttribute('data-sceneid');
+            
+            const sceneName = trigger.parentElement.querySelector('h3') ? 
+                             trigger.parentElement.querySelector('h3').textContent : 
+                             'Unknown Scene';
+
+            // Debug ekleyelim
+            console.log('Scene trigger clicked:', {
+                sceneId: sceneId,
+                sceneName: sceneName,
+                attributes: Array.from(trigger.attributes).map(attr => `${attr.name}="${attr.value}"`),
+                classList: Array.from(trigger.classList),
+                innerHTML: trigger.innerHTML,
+                outerHTML: trigger.outerHTML.substring(0, 200)
+            });
+
+            // sceneId undefined kontrolü
+            if (!sceneId || sceneId === 'undefined' || sceneId === 'null') {
+                console.error('Scene ID is undefined or invalid:', sceneId);
+                alert('Senaryo ID\'si geçersiz. Lütfen sayfayı yenileyin.');
+                return;
+            }
 
             // Visual feedback
             const originalText = trigger.textContent;
@@ -72,12 +157,15 @@ document.addEventListener('DOMContentLoaded', async function() {
             trigger.disabled = true;
 
             try {
+                console.log(`Executing scene with ID: ${sceneId}`);
                 await fetchAPI(`${API.scenes}/${sceneId}/execute`, {
                     method: 'POST'
                 });
                 console.log(`Executed scene: ${sceneName}`);
+                alert(`${sceneName} senaryosu başarıyla çalıştırıldı!`);
             } catch (error) {
                 console.error('Error executing scene:', error);
+                alert(`Senaryo çalıştırılırken hata oluştu: ${error.message}`);
             } finally {
                 setTimeout(() => {
                     trigger.textContent = originalText;
@@ -87,16 +175,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // Navigation highlight
+    // Navigation functionality
     const navLinks = document.querySelectorAll('.nav-links a');
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
+            
+            // Update active nav item
             navLinks.forEach(l => l.parentElement.classList.remove('active'));
             this.parentElement.classList.add('active');
             
+            // Update header title
             const headerTitle = document.querySelector('header h1');
-            headerTitle.textContent = this.querySelector('span').textContent;
+            const pageTitle = this.querySelector('span').textContent;
+            headerTitle.textContent = pageTitle;
+            
+            // Show/hide page content
+            showPage(pageTitle);
         });
     });
 
@@ -113,26 +208,70 @@ document.addEventListener('DOMContentLoaded', async function() {
 // Setup modal functionality
 function setupModals() {
     const addRoomBtn = document.getElementById('add-room-btn');
+    const addRoomBtn2 = document.getElementById('add-room-btn-2');
     const addSceneBtn = document.getElementById('add-scene-btn');
+    const addSceneBtn2 = document.getElementById('add-scene-btn-2');
+    const addDeviceBtn = document.getElementById('add-device-btn');
     const roomModal = document.getElementById('add-room-modal');
     const sceneModal = document.getElementById('add-scene-modal');
+    const deviceModal = document.getElementById('add-device-modal');
     const closeButtons = document.querySelectorAll('.close, .cancel-btn');
     
-    // Open room modal
-    addRoomBtn.addEventListener('click', () => {
-        roomModal.style.display = 'block';
+    // Debug - element kontrolü
+    console.log('Modal setup - Elements found:', {
+        addRoomBtn: !!addRoomBtn,
+        addSceneBtn: !!addSceneBtn,
+        addDeviceBtn: !!addDeviceBtn,
+        roomModal: !!roomModal,
+        sceneModal: !!sceneModal,
+        deviceModal: !!deviceModal
     });
     
+    // Open room modal
+    if (addRoomBtn && roomModal) {
+        addRoomBtn.addEventListener('click', () => {
+            console.log('Room modal opening...'); // Debug
+            roomModal.style.display = 'block';
+        });
+    }
+    
+    if (addRoomBtn2 && roomModal) {
+        addRoomBtn2.addEventListener('click', () => {
+            console.log('Room modal opening from rooms page...'); // Debug
+            roomModal.style.display = 'block';
+        });
+    }
+    
     // Open scene modal
-    addSceneBtn.addEventListener('click', () => {
-        sceneModal.style.display = 'block';
-    });
+    if (addSceneBtn && sceneModal) {
+        addSceneBtn.addEventListener('click', () => {
+            console.log('Scene modal opening...'); // Debug
+            sceneModal.style.display = 'block';
+        });
+    }
+    
+    if (addSceneBtn2 && sceneModal) {
+        addSceneBtn2.addEventListener('click', () => {
+            console.log('Scene modal opening from scenes page...'); // Debug
+            sceneModal.style.display = 'block';
+        });
+    }
+    
+    // Open device modal
+    if (addDeviceBtn && deviceModal) {
+        addDeviceBtn.addEventListener('click', async () => {
+            console.log('Device modal opening...'); // Debug
+            await loadRoomsToSelect();
+            deviceModal.style.display = 'block';
+        });
+    }
     
     // Close modals
     closeButtons.forEach(btn => {
         btn.addEventListener('click', () => {
-            roomModal.style.display = 'none';
-            sceneModal.style.display = 'none';
+            if (roomModal) roomModal.style.display = 'none';
+            if (sceneModal) sceneModal.style.display = 'none';
+            if (deviceModal) deviceModal.style.display = 'none';
         });
     });
     
@@ -144,6 +283,9 @@ function setupModals() {
         if (e.target === sceneModal) {
             sceneModal.style.display = 'none';
         }
+        if (e.target === deviceModal) {
+            deviceModal.style.display = 'none';
+        }
     });
 }
 
@@ -151,6 +293,17 @@ function setupModals() {
 function setupFormSubmissions() {
     const addRoomForm = document.getElementById('add-room-form');
     const addSceneForm = document.getElementById('add-scene-form');
+    const addDeviceForm = document.getElementById('add-device-form');
+    
+    // Null check ekleyelim
+    if (!addRoomForm || !addSceneForm || !addDeviceForm) {
+        console.error('Forms not found:', {
+            addRoomForm: !!addRoomForm,
+            addSceneForm: !!addSceneForm,
+            addDeviceForm: !!addDeviceForm
+        });
+        return;
+    }
     
     // Room form submission
     addRoomForm.addEventListener('submit', async (e) => {
@@ -162,11 +315,15 @@ function setupFormSubmissions() {
             floor: parseInt(document.getElementById('room-floor').value, 10)
         };
         
+        console.log('Sending room data:', formData);
+        
         try {
-            await fetchAPI(API.rooms, {
+            const result = await fetchAPI(API.rooms, {
                 method: 'POST',
                 body: JSON.stringify(formData)
             });
+            
+            console.log('Room creation result:', result);
             
             // Close modal and reset form
             document.getElementById('add-room-modal').style.display = 'none';
@@ -179,7 +336,7 @@ function setupFormSubmissions() {
             alert('Oda başarıyla eklendi!');
         } catch (error) {
             console.error('Error adding room:', error);
-            alert('Oda eklenirken bir hata oluştu!');
+            alert('Oda eklenirken bir hata oluştu: ' + error.message);
         }
     });
     
@@ -214,17 +371,64 @@ function setupFormSubmissions() {
             alert('Senaryo eklenirken bir hata oluştu!');
         }
     });
+
+    // Device form submission
+    addDeviceForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = {
+            name: document.getElementById('device-name').value,
+            type: document.getElementById('device-type').value,
+            roomId: parseInt(document.getElementById('device-room').value, 10),
+            ipAddress: document.getElementById('device-ip').value || null,
+            macAddress: document.getElementById('device-mac').value || null,
+            firmwareVersion: "1.0.0" // Default değer
+        };
+        
+        console.log('Sending device data:', formData);
+        
+        try {
+            const result = await fetchAPI(API.devices, {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+            
+            console.log('Device creation result:', result);
+            
+            // Close modal and reset form
+            document.getElementById('add-device-modal').style.display = 'none';
+            addDeviceForm.reset();
+            
+            // Refresh dashboard
+            await loadDashboard();
+            
+            // Show success message
+            alert('Cihaz başarıyla eklendi!');
+        } catch (error) {
+            console.error('Error adding device:', error);
+            alert('Cihaz eklenirken bir hata oluştu: ' + error.message);
+        }
+    });
 }
 
 // Dashboard verilerini yükle
 async function loadDashboard() {
     try {
+        console.log('Loading dashboard data...'); // Debug
+        
         // Odaları yükle
         const rooms = await fetchAPI(API.rooms);
+        console.log('Loaded rooms:', rooms); // Debug
         updateRoomsOverview(rooms);
+
+        // Cihazları yükle
+        const devices = await fetchAPI(API.devices);
+        console.log('Loaded devices:', devices); // Debug
+        updateDevicesOverview(devices);
 
         // Senaryoları yükle
         const scenes = await fetchAPI(API.scenes);
+        console.log('Loaded scenes:', scenes); // Debug
         updateScenesOverview(scenes);
 
         // İstatistikleri güncelle
@@ -234,65 +438,200 @@ async function loadDashboard() {
     }
 }
 
+// Odaları device select'e yükle
+async function loadRoomsToSelect() {
+    try {
+        const rooms = await fetchAPI(API.rooms);
+        console.log('Loading rooms to select:', rooms);
+        
+        const roomSelect = document.getElementById('device-room');
+        roomSelect.innerHTML = '<option value="">Oda seçiniz</option>';
+        
+        if (rooms && rooms.length > 0) {
+            rooms.forEach(room => {
+                const option = document.createElement('option');
+                option.value = room.Id;
+                option.textContent = room.Name || 'Adsız Oda';
+                roomSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading rooms to select:', error);
+    }
+}
+
 // Oda kartlarını güncelle
 function updateRoomsOverview(rooms) {
+    console.log('Updating rooms overview with:', rooms);
+    console.log('Rooms type:', typeof rooms);
+    console.log('Rooms array length:', Array.isArray(rooms) ? rooms.length : 'Not an array');
+    
     const roomCardsContainer = document.querySelector('.room-cards');
+    if (!roomCardsContainer) {
+        console.error('Room cards container not found!');
+        return;
+    }
+    
     if (!rooms || rooms.length === 0) {
+        console.log('No rooms found');
         roomCardsContainer.innerHTML = '<div class="empty-state">Henüz oda bulunmuyor</div>';
         return;
     }
     
-    roomCardsContainer.innerHTML = rooms.map(room => `
-        <div class="room-card">
-            <div class="room-header">
-                <h3>${room.name}</h3>
-                <span class="device-count">${room.devices ? room.devices.length : 0} Cihaz</span>
+    roomCardsContainer.innerHTML = rooms.map((room, index) => {
+        console.log(`Processing room ${index}:`, room);
+        console.log(`Room keys:`, Object.keys(room));
+        
+        // API PascalCase döndürüyor, bu yüzden büyük harfle başlayan field'ları kullanıyoruz
+        const roomId = room.Id;
+        const roomName = room.Name || 'Adsız Oda';
+        const roomDevices = room.Devices || [];
+        const deviceCount = roomDevices.length;
+        
+        console.log(`Room ${index} processed:`, { roomId, roomName, deviceCount });
+        
+        return `
+            <div class="room-card" data-room-id="${roomId}">
+                <div class="room-header">
+                    <h3>${roomName}</h3>
+                    <span class="device-count">${deviceCount} Cihaz</span>
+                </div>
+                <div class="room-devices">
+                    ${roomDevices.length > 0 ? roomDevices.map((device, deviceIndex) => {
+                        console.log(`Processing device ${deviceIndex}:`, device);
+                        const deviceId = device.Id;
+                        const deviceName = device.Name || 'Adsız Cihaz';
+                        const deviceType = device.Type || 'UNKNOWN';
+                        const isActive = device.Status === 'ON' || device.IsActive;
+                        
+                        return `
+                            <div class="device-item ${isActive ? 'active' : ''}" data-device-id="${deviceId}">
+                                <i class="fas fa-${getDeviceIcon(deviceType)}"></i>
+                                <span>${deviceName}</span>
+                            </div>
+                        `;
+                    }).join('') : '<div class="empty-device">Bu odada cihaz bulunmuyor</div>'}
+                </div>
             </div>
-            <div class="room-devices">
-                ${room.devices && room.devices.length > 0 ? room.devices.map(device => `
-                    <div class="device-item ${device.isActive ? 'active' : ''}" data-device-id="${device.id}">
-                        <i class="fas fa-${getDeviceIcon(device.type)}"></i>
-                        <span>${device.name}</span>
-                    </div>
-                `).join('') : '<div class="empty-device">Bu odada cihaz bulunmuyor</div>'}
+        `;
+    }).join('');
+}
+
+// Cihaz kartlarını güncelle
+function updateDevicesOverview(devices) {
+    console.log('Updating devices overview with:', devices);
+    
+    const deviceCardsContainer = document.querySelector('.device-cards');
+    if (!devices || devices.length === 0) {
+        console.log('No devices found');
+        deviceCardsContainer.innerHTML = '<div class="empty-state">Henüz cihaz bulunmuyor</div>';
+        return;
+    }
+    
+    deviceCardsContainer.innerHTML = devices.map(device => {
+        console.log('Processing device:', device);
+        // API PascalCase döndürüyor
+        const deviceName = device.Name || 'Adsız Cihaz';
+        const isActive = device.Status === 'ON' || device.IsActive;
+        
+        return `
+            <div class="device-card">
+                <div class="device-header">
+                    <h3>${deviceName}</h3>
+                    <span class="device-status ${isActive ? 'active' : 'inactive'}">
+                        ${isActive ? 'Aktif' : 'Pasif'}
+                    </span>
+                </div>
+                <div class="device-info">
+                    <p><i class="fas fa-${getDeviceIcon(device.Type)}"></i> ${device.Type}</p>
+                    <p><i class="fas fa-network-wired"></i> ${device.IpAddress || 'IP Yok'}</p>
+                </div>
+                <div class="device-actions">
+                    <button class="toggle-btn ${isActive ? 'active' : ''}" data-device-id="${device.Id}">
+                        ${isActive ? 'Kapat' : 'Aç'}
+                    </button>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 // Senaryo kartlarını güncelle
 function updateScenesOverview(scenes) {
+    console.log('=== updateScenesOverview START ===');
+    console.log('Updating scenes overview with:', scenes);
+    console.log('scenes type:', typeof scenes);
+    console.log('scenes length:', scenes ? scenes.length : 'null/undefined');
+    
     const sceneCardsContainer = document.querySelector('.scene-cards');
     if (!scenes || scenes.length === 0) {
+        console.log('No scenes found');
         sceneCardsContainer.innerHTML = '<div class="empty-state">Henüz senaryo bulunmuyor</div>';
         return;
     }
     
-    sceneCardsContainer.innerHTML = scenes.map(scene => `
-        <div class="scene-card">
-            <i class="fas fa-${getSceneIcon(scene.name)}"></i>
-            <h3>${scene.name}</h3>
-            <button class="scene-trigger" data-scene-id="${scene.id}">Çalıştır</button>
-        </div>
-    `).join('');
+    sceneCardsContainer.innerHTML = scenes.map((scene, index) => {
+        console.log(`=== Processing scene ${index} ===`);
+        console.log('Full scene object:', scene);
+        console.log('scene.Id:', scene.Id);
+        console.log('scene.Name:', scene.Name);
+        console.log('Object.keys(scene):', Object.keys(scene));
+        
+        // API PascalCase döndürüyor
+        const sceneId = scene.Id;
+        const sceneName = scene.Name || 'Adsız Senaryo';
+        
+        console.log(`Final values for scene ${index}:`, {sceneId, sceneName});
+        
+        const htmlTemplate = `
+            <div class="scene-card">
+                <i class="fas fa-${getSceneIcon(sceneName)}"></i>
+                <h3>${sceneName}</h3>
+                <button class="scene-trigger" data-scene-id="${sceneId}">Çalıştır</button>
+            </div>
+        `;
+        
+        console.log(`HTML template for scene ${index}:`, htmlTemplate);
+        return htmlTemplate;
+    }).join('');
+    
+    console.log('=== updateScenesOverview END ===');
 }
 
 // İstatistikleri güncelle
 async function updateStats() {
     try {
         const devices = await fetchAPI(API.devices);
-        const activeDevices = devices.filter(d => d.isActive).length;
+        console.log('Updating stats with devices:', devices);
+        
+        // PascalCase kullanarak device kontrolü
+        const activeDevices = devices.filter(d => {
+            const isActive = d.Status === 'ON' || d.IsActive === true;
+            console.log(`Device ${d.Name}: Status=${d.Status}, IsActive=${d.IsActive}, isActive=${isActive}`);
+            return isActive;
+        }).length;
         const totalDevices = devices.length;
+
+        console.log(`Active devices: ${activeDevices}/${totalDevices}`);
 
         // Aktif cihazları güncelle
         document.querySelector('.stat-card:first-child p').textContent = `${activeDevices}/${totalDevices}`;
 
-        // Sıcaklık ve enerji verilerini al (mock data)
+        // Sıcaklık (mock data)
         const temp = (Math.random() * 5 + 20).toFixed(1);
-        const energyUsage = (Math.random() * 2 + 1.5).toFixed(1);
+        
+        // Enerji tüketimi - aktif cihaz sayısına bağlı
+        // Her aktif cihaz için yaklaşık 0.5-1.2 kW tüketim
+        const baseEnergyPerDevice = 0.5;
+        const energyVariation = 0.7; // 0.5 ile 1.2 arasında
+        const energyUsage = activeDevices > 0 ? 
+            (activeDevices * (baseEnergyPerDevice + Math.random() * energyVariation)).toFixed(1) : 
+            '0.0';
 
         document.querySelector('.stat-card:nth-child(2) p').textContent = `${temp}°C`;
         document.querySelector('.stat-card:last-child p').textContent = `${energyUsage} kW`;
+
+        console.log(`Stats updated - Active: ${activeDevices}/${totalDevices}, Temp: ${temp}°C, Energy: ${energyUsage} kW`);
 
     } catch (error) {
         console.error('Error updating stats:', error);
@@ -325,6 +664,160 @@ function getSceneIcon(name) {
     if (lowercaseName.includes('parti')) return 'music';
     if (lowercaseName.includes('sabah')) return 'sun';
     return 'magic';
+}
+
+// Sayfa navigasyon fonksiyonu
+function showPage(pageTitle) {
+    // Tüm sayfaları gizle
+    const allPages = document.querySelectorAll('.page-content');
+    allPages.forEach(page => page.classList.remove('active'));
+    
+    // İlgili sayfayı göster
+    let targetPageId;
+    switch(pageTitle) {
+        case 'Dashboard':
+            targetPageId = 'dashboard-page';
+            break;
+        case 'Odalar':
+            targetPageId = 'rooms-page';
+            loadRoomsPage();
+            break;
+        case 'Senaryolar':
+            targetPageId = 'scenes-page';
+            loadScenesPage();
+            break;
+        case 'Ayarlar':
+            targetPageId = 'settings-page';
+            break;
+        default:
+            targetPageId = 'dashboard-page';
+    }
+    
+    const targetPage = document.getElementById(targetPageId);
+    if (targetPage) {
+        targetPage.classList.add('active');
+    }
+}
+
+// Odalar sayfasını yükle
+async function loadRoomsPage() {
+    try {
+        const rooms = await fetchAPI(API.rooms);
+        console.log('Loading rooms page with:', rooms);
+        
+        const roomsGrid = document.querySelector('.rooms-grid');
+        if (!rooms || rooms.length === 0) {
+            roomsGrid.innerHTML = '<div class="empty-state">Henüz oda bulunmuyor</div>';
+            return;
+        }
+        
+        roomsGrid.innerHTML = rooms.map(room => {
+            const roomId = room.Id;
+            const roomName = room.Name || 'Adsız Oda';
+            const roomDevices = room.Devices || [];
+            const deviceCount = roomDevices.length;
+            const activeDevices = roomDevices.filter(d => d.Status === 'ON').length;
+            
+            return `
+                <div class="room-detail-card" data-room-id="${roomId}">
+                    <div class="room-detail-header">
+                        <h3>${roomName}</h3>
+                        <div class="room-actions">
+                            <button class="edit-btn" onclick="editRoom(${roomId})">
+                                <i class="fas fa-edit"></i> Düzenle
+                            </button>
+                            <button class="delete-btn" onclick="deleteRoom(${roomId})">
+                                <i class="fas fa-trash"></i> Sil
+                            </button>
+                        </div>
+                    </div>
+                    <div class="room-stats">
+                        <p><strong>Toplam Cihaz:</strong> ${deviceCount}</p>
+                        <p><strong>Aktif Cihaz:</strong> ${activeDevices}</p>
+                        <p><strong>Kat:</strong> ${room.Floor || 1}</p>
+                    </div>
+                    <div class="room-devices">
+                        ${roomDevices.length > 0 ? roomDevices.map(device => {
+                            const isActive = device.Status === 'ON';
+                            return `
+                                <div class="device-item ${isActive ? 'active' : ''}" data-device-id="${device.Id}">
+                                    <i class="fas fa-${getDeviceIcon(device.Type)}"></i>
+                                    <span>${device.Name}</span>
+                                </div>
+                            `;
+                        }).join('') : '<div class="empty-device">Bu odada cihaz bulunmuyor</div>'}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading rooms page:', error);
+    }
+}
+
+// Senaryolar sayfasını yükle
+async function loadScenesPage() {
+    try {
+        const scenes = await fetchAPI(API.scenes);
+        console.log('Loading scenes page with:', scenes);
+        
+        const scenesGrid = document.querySelector('.scenes-grid');
+        if (!scenes || scenes.length === 0) {
+            scenesGrid.innerHTML = '<div class="empty-state">Henüz senaryo bulunmuyor</div>';
+            return;
+        }
+        
+        scenesGrid.innerHTML = scenes.map(scene => {
+            const sceneId = scene.Id;
+            const sceneName = scene.Name || 'Adsız Senaryo';
+            const sceneDescription = scene.Description || 'Açıklama yok';
+            
+            return `
+                <div class="scene-detail-card" data-scene-id="${sceneId}">
+                    <i class="fas fa-${getSceneIcon(sceneName)}"></i>
+                    <h3>${sceneName}</h3>
+                    <p>${sceneDescription}</p>
+                    <div class="scene-actions">
+                        <button class="scene-trigger primary-btn" data-scene-id="${sceneId}">
+                            <i class="fas fa-play"></i> Çalıştır
+                        </button>
+                        <button class="edit-btn" onclick="editScene(${sceneId})">
+                            <i class="fas fa-edit"></i> Düzenle
+                        </button>
+                        <button class="delete-btn" onclick="deleteScene(${sceneId})">
+                            <i class="fas fa-trash"></i> Sil
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error loading scenes page:', error);
+    }
+}
+
+// Oda düzenleme fonksiyonu (placeholder)
+function editRoom(roomId) {
+    alert(`Oda ${roomId} düzenleme özelliği yakında eklenecek!`);
+}
+
+// Oda silme fonksiyonu (placeholder)
+function deleteRoom(roomId) {
+    if (confirm('Bu odayı silmek istediğinizden emin misiniz?')) {
+        alert(`Oda ${roomId} silme özelliği yakında eklenecek!`);
+    }
+}
+
+// Senaryo düzenleme fonksiyonu (placeholder)
+function editScene(sceneId) {
+    alert(`Senaryo ${sceneId} düzenleme özelliği yakında eklenecek!`);
+}
+
+// Senaryo silme fonksiyonu (placeholder)
+function deleteScene(sceneId) {
+    if (confirm('Bu senaryoyu silmek istediğinizden emin misiniz?')) {
+        alert(`Senaryo ${sceneId} silme özelliği yakında eklenecek!`);
+    }
 }
 
 // Her 30 saniyede bir istatistikleri güncelle

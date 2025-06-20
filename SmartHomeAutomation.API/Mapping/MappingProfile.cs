@@ -14,7 +14,8 @@ namespace SmartHomeAutomation.API.Mapping
             CreateMap<UpdateUserDto, User>();
 
             // Device mappings
-            CreateMap<Device, DeviceDto>();
+            CreateMap<Device, DeviceDto>()
+                .ForMember(dest => dest.IsActive, opt => opt.MapFrom(src => src.Status == "ON"));
             CreateMap<CreateDeviceDto, Device>();
             CreateMap<UpdateDeviceDto, Device>();
 

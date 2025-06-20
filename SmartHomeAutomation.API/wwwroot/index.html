@@ -38,55 +38,139 @@
                 </div>
             </header>
 
-            <section class="stats-section">
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-plug"></i>
+            <!-- Dashboard Page -->
+            <div id="dashboard-page" class="page-content active">
+                <section class="stats-section">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-plug"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Aktif Cihazlar</h3>
+                            <p>8/12</p>
+                        </div>
                     </div>
-                    <div class="stat-info">
-                        <h3>Aktif Cihazlar</h3>
-                        <p>8/12</p>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-thermometer-half"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Ortalama Sıcaklık</h3>
+                            <p>23.5°C</p>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-thermometer-half"></i>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>Enerji Tüketimi</h3>
+                            <p>2.4 kW</p>
+                        </div>
                     </div>
-                    <div class="stat-info">
-                        <h3>Ortalama Sıcaklık</h3>
-                        <p>23.5°C</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon">
-                        <i class="fas fa-bolt"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>Enerji Tüketimi</h3>
-                        <p>2.4 kW</p>
-                    </div>
-                </div>
-            </section>
+                </section>
 
-            <section class="rooms-section">
-                <div class="section-header">
-                    <h2>Odalar</h2>
-                    <button class="add-btn" id="add-room-btn"><i class="fas fa-plus"></i> Oda Ekle</button>
-                </div>
-                <div class="room-cards">
-                    <!-- Odalar dinamik olarak JavaScript ile eklenecek -->
-                </div>
-            </section>
+                <section class="rooms-section">
+                    <div class="section-header">
+                        <h2>Odalar</h2>
+                        <button class="add-btn" id="add-room-btn"><i class="fas fa-plus"></i> Oda Ekle</button>
+                    </div>
+                    <div class="room-cards">
+                        <!-- Odalar dinamik olarak JavaScript ile eklenecek -->
+                    </div>
+                </section>
 
-            <section class="scenes-section">
-                <div class="section-header">
-                    <h2>Senaryolar</h2>
-                    <button class="add-btn" id="add-scene-btn"><i class="fas fa-plus"></i> Senaryo Ekle</button>
-                </div>
-                <div class="scene-cards">
-                    <!-- Senaryolar dinamik olarak JavaScript ile eklenecek -->
-                </div>
-            </section>
+                <section class="devices-section">
+                    <div class="section-header">
+                        <h2>Cihazlar</h2>
+                        <button class="add-btn" id="add-device-btn"><i class="fas fa-plus"></i> Cihaz Ekle</button>
+                    </div>
+                    <div class="device-cards">
+                        <!-- Cihazlar dinamik olarak JavaScript ile eklenecek -->
+                    </div>
+                </section>
+
+                <section class="scenes-section">
+                    <div class="section-header">
+                        <h2>Senaryolar</h2>
+                        <button class="add-btn" id="add-scene-btn"><i class="fas fa-plus"></i> Senaryo Ekle</button>
+                    </div>
+                    <div class="scene-cards">
+                        <!-- Senaryolar dinamik olarak JavaScript ile eklenecek -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Rooms Page -->
+            <div id="rooms-page" class="page-content">
+                <section class="page-section">
+                    <div class="section-header">
+                        <h2>Tüm Odalar</h2>
+                        <button class="add-btn" id="add-room-btn-2"><i class="fas fa-plus"></i> Oda Ekle</button>
+                    </div>
+                    <div class="rooms-grid">
+                        <!-- Odalar dinamik olarak JavaScript ile eklenecek -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Scenes Page -->
+            <div id="scenes-page" class="page-content">
+                <section class="page-section">
+                    <div class="section-header">
+                        <h2>Tüm Senaryolar</h2>
+                        <button class="add-btn" id="add-scene-btn-2"><i class="fas fa-plus"></i> Senaryo Ekle</button>
+                    </div>
+                    <div class="scenes-grid">
+                        <!-- Senaryolar dinamik olarak JavaScript ile eklenecek -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- Settings Page -->
+            <div id="settings-page" class="page-content">
+                <section class="page-section">
+                    <div class="section-header">
+                        <h2>Ayarlar</h2>
+                    </div>
+                    <div class="settings-content">
+                        <div class="settings-group">
+                            <h3>Genel Ayarlar</h3>
+                            <div class="setting-item">
+                                <label>Otomatik Güncelleme</label>
+                                <input type="checkbox" checked>
+                            </div>
+                            <div class="setting-item">
+                                <label>Bildirimler</label>
+                                <input type="checkbox" checked>
+                            </div>
+                            <div class="setting-item">
+                                <label>Karanlık Tema</label>
+                                <input type="checkbox">
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <h3>Sistem Bilgileri</h3>
+                            <div class="setting-item">
+                                <label>Sürüm</label>
+                                <span>v1.0.0</span>
+                            </div>
+                            <div class="setting-item">
+                                <label>Son Güncelleme</label>
+                                <span>19 Aralık 2024</span>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <h3>Hesap</h3>
+                            <div class="setting-item">
+                                <button class="danger-btn">Hesabı Sil</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
         </main>
     </div>
     
@@ -149,6 +233,53 @@
         </div>
     </div>
 
-    <script src="/js/main.js"></script>
+    <!-- Cihaz Ekleme Modal -->
+    <div id="add-device-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Yeni Cihaz Ekle</h2>
+            <form id="add-device-form">
+                <div class="form-group">
+                    <label for="device-name">Cihaz Adı</label>
+                    <input type="text" id="device-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="device-type">Cihaz Türü</label>
+                    <select id="device-type" name="type" required>
+                        <option value="">Seçiniz</option>
+                        <option value="LIGHT">Işık</option>
+                        <option value="TV">Televizyon</option>
+                        <option value="AC">Klima</option>
+                        <option value="THERMOSTAT">Termostat</option>
+                        <option value="SPEAKER">Hoparlör</option>
+                        <option value="CAMERA">Kamera</option>
+                        <option value="LOCK">Kilit</option>
+                        <option value="CURTAIN">Perde</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="device-room">Oda</label>
+                    <select id="device-room" name="roomId" required>
+                        <option value="">Oda seçiniz</option>
+                        <!-- Odalar dinamik olarak yüklenecek -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="device-ip">IP Adresi</label>
+                    <input type="text" id="device-ip" name="ipAddress" placeholder="192.168.1.100">
+                </div>
+                <div class="form-group">
+                    <label for="device-mac">MAC Adresi</label>
+                    <input type="text" id="device-mac" name="macAddress" placeholder="AA:BB:CC:DD:EE:FF">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn">Ekle</button>
+                    <button type="button" class="cancel-btn">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/main.js?v=20241219-navigation"></script>
 </body>
 </html> 

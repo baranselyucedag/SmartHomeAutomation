@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.InMemory;
 using SmartHomeAutomation.API.Mapping;
+using SmartHomeAutomation.Core.Entities;
 using SmartHomeAutomation.API.Services;
 using SmartHomeAutomation.Core.Interfaces;
 using SmartHomeAutomation.Infrastructure.Data;
@@ -100,9 +102,19 @@ builder.Services.AddAuthentication(options =>
 });
 
 // Add DbContext
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-    b => b.MigrationsAssembly("SmartHomeAutomation.API")));
+if (builder.Environment.IsDevelopment())
+{
+    // Development ortamında InMemory database kullan
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseInMemoryDatabase("SmartHomeAutomationInMemoryDb"));
+}
+else
+{
+    // Production'da PostgreSQL kullan
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        b => b.MigrationsAssembly("SmartHomeAutomation.API")));
+}
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -128,7 +140,16 @@ builder.Services.AddHttpLogging(options =>
 // CORS yapılandırması
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("https://localhost:7047", "http://localhost:7047", "http://localhost:5292", "https://localhost:5292")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+    
+    // Development için daha geniş policy
+    options.AddPolicy("DevelopmentPolicy", policy =>
     {
         policy.AllowAnyOrigin()
               .AllowAnyHeader()
@@ -152,14 +173,39 @@ app.UseSerilogRequestLogging(options =>
     options.MessageTemplate = "HTTP {RequestMethod} {RequestPath} responded {StatusCode} in {Elapsed:0.0000} ms";
 });
 
-app.UseHttpsRedirection();
+// CORS middleware'ini etkinleştir - HTTPS redirection'dan önce olmalı
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("DevelopmentPolicy");
+}
+else
+{
+    app.UseCors("AllowFrontend");
+}
 
 // Static dosyaları etkinleştir
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// CORS middleware'ini etkinleştir
-app.UseCors();
+// HTTPS redirection'ı development ortamında devre dışı bırak
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+// Add middleware to handle OPTIONS requests for CORS preflight
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.Headers["Access-Control-Allow-Origin"] = "*";
+        context.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, DELETE, OPTIONS";
+        context.Response.Headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization";
+        context.Response.StatusCode = 200;
+        return;
+    }
+    await next();
+});
 
 // Add authentication middleware
 app.UseAuthentication();
@@ -218,7 +264,88 @@ app.MapGet("/weatherforecast", () =>
 try
 {
     Log.Information("Starting web application");
-    app.Run();
+    // Seed database with test data in development
+if (app.Environment.IsDevelopment())
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        
+        // Ensure database is created
+        context.Database.EnsureCreated();
+        
+        // Seed data if not exists
+        if (!context.Users.Any())
+        {
+            var testUser = new User
+            {
+                Id = 1,
+                Username = "testuser",
+                Email = "test@example.com",
+                FirstName = "Test",
+                LastName = "User",
+                PasswordHash = "dummy_hash",
+                PhoneNumber = "1234567890",
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            context.Users.Add(testUser);
+            
+            var testRoom = new Room
+            {
+                Id = 1,
+                Name = "Oturma Odası",
+                Description = "Ana oturma odası",
+                Floor = 1,
+                UserId = 1,
+                CreatedAt = DateTime.UtcNow
+            };
+            context.Rooms.Add(testRoom);
+            
+            var testDevice = new Device
+            {
+                Id = 1,
+                Name = "Akıllı Lamba",
+                Type = "LIGHT",
+                Status = "OFF",
+                IsOnline = true,
+                IpAddress = "192.168.1.100",
+                MacAddress = "AA:BB:CC:DD:EE:FF",
+                FirmwareVersion = "1.0.0",
+                RoomId = 1,
+                UserId = 1,
+                CreatedAt = DateTime.UtcNow
+            };
+            context.Devices.Add(testDevice);
+            
+            var testScene = new Scene
+            {
+                Id = 1,
+                Name = "Film Gecesi",
+                Description = "Film izlemek için ideal ortam",
+                Icon = "film",
+                IsActive = true,
+                UserId = 1,
+                CreatedAt = DateTime.UtcNow
+            };
+            context.Scenes.Add(testScene);
+            
+            var sceneDevice = new SceneDevice
+            {
+                SceneId = 1,
+                DeviceId = 1,
+                TargetState = "ON",
+                TargetValue = "50", // 50% brightness
+                Order = 1
+            };
+            context.SceneDevices.Add(sceneDevice);
+            
+            context.SaveChanges();
+        }
+    }
+}
+
+app.Run();
 }
 catch (Exception ex)
 {

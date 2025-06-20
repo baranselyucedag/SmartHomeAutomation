@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 using SmartHomeAutomation.API.DTOs;
 using SmartHomeAutomation.API.Interfaces;
@@ -6,9 +7,9 @@ using System.Security.Claims;
 
 namespace SmartHomeAutomation.API.Controllers
 {
-    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
+    [EnableCors("DevelopmentPolicy")]
     public class DeviceController : ControllerBase
     {
         private readonly IDeviceService _deviceService;

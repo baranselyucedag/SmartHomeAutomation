@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace SmartHomeAutomation.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [EnableCors("DevelopmentPolicy")]
     public class UserController : ControllerBase
     {
         [HttpGet]
