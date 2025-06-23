@@ -101,20 +101,14 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Add DbContext
-if (builder.Environment.IsDevelopment())
-{
-    // Development ortamında InMemory database kullan
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseInMemoryDatabase("SmartHomeAutomationInMemoryDb"));
-}
-else
-{
-    // Production'da PostgreSQL kullan
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-        b => b.MigrationsAssembly("SmartHomeAutomation.API")));
-}
+// Add DbContext - InMemory kullan (PostgreSQL'e geçiş için yorum açın)
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseInMemoryDatabase("SmartHomeAutomationDb"));
+    
+// PostgreSQL için (veritabanı çalıştığında açın):
+// builder.Services.AddDbContext<ApplicationDbContext>(options =>
+//     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+//     b => b.MigrationsAssembly("SmartHomeAutomation.API")));
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));

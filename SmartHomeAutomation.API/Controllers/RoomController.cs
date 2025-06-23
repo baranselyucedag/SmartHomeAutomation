@@ -73,14 +73,40 @@ namespace SmartHomeAutomation.API.Controllers
             {
                 return NotFound();
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetRoom: {ex.Message}");
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
 
         [HttpPost]
         public async Task<ActionResult<RoomDto>> CreateRoom([FromBody] CreateRoomDto createRoomDto)
         {
-            var userId = GetUserId();
-            var room = await _roomService.CreateRoomAsync(createRoomDto, userId);
-            return CreatedAtAction(nameof(GetRoom), new { id = room.Id }, room);
+            try
+            {
+                Console.WriteLine($"CreateRoom called with: {System.Text.Json.JsonSerializer.Serialize(createRoomDto)}");
+                
+                if (createRoomDto == null)
+                {
+                    Console.WriteLine("CreateRoomDto is null");
+                    return BadRequest(new { message = "Room data is required" });
+                }
+
+                var userId = GetUserId();
+                Console.WriteLine($"UserId: {userId}");
+                
+                var room = await _roomService.CreateRoomAsync(createRoomDto, userId);
+                Console.WriteLine($"Room created with ID: {room.Id}");
+                
+                return CreatedAtAction(nameof(GetRoom), new { id = room.Id }, room);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in CreateRoom: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, new { message = ex.Message, detail = ex.StackTrace });
+            }
         }
 
         [HttpPut("{id}")]
@@ -95,6 +121,12 @@ namespace SmartHomeAutomation.API.Controllers
             catch (KeyNotFoundException)
             {
                 return NotFound();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in UpdateRoom: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, new { message = ex.Message });
             }
         }
 
@@ -111,6 +143,12 @@ namespace SmartHomeAutomation.API.Controllers
             {
                 return NotFound();
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in DeleteRoom: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
 
         [HttpGet("{id}/devices")]
@@ -125,6 +163,11 @@ namespace SmartHomeAutomation.API.Controllers
             catch (KeyNotFoundException)
             {
                 return NotFound();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetRoomDevices: {ex.Message}");
+                return StatusCode(500, new { message = ex.Message });
             }
         }
     }
