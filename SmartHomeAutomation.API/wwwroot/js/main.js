@@ -886,5 +886,284 @@ function logout() {
     }
 }
 
+// Settings functionality
+function setupSettings() {
+    // Load saved settings from localStorage
+    loadSettings();
+    
+    // Setup event listeners for settings
+    setupSettingsEventListeners();
+    
+    // Update system info
+    updateSystemInfo();
+}
+
+function loadSettings() {
+    const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+    
+    // Apply saved settings
+    Object.keys(settings).forEach(key => {
+        const element = document.getElementById(key);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.checked = settings[key];
+            } else if (element.tagName === 'SELECT') {
+                element.value = settings[key];
+            }
+        }
+    });
+}
+
+function saveSettings() {
+    const settings = {};
+    
+    // Collect all setting values
+    const settingElements = document.querySelectorAll('.setting-item input, .setting-item select');
+    settingElements.forEach(element => {
+        if (element.id) {
+            if (element.type === 'checkbox') {
+                settings[element.id] = element.checked;
+            } else {
+                settings[element.id] = element.value;
+            }
+        }
+    });
+    
+    localStorage.setItem('appSettings', JSON.stringify(settings));
+    
+    // Show feedback
+    showNotification('Ayarlar kaydedildi!', 'success');
+}
+
+function setupSettingsEventListeners() {
+    // Auto-save settings on change
+    document.addEventListener('change', function(e) {
+        if (e.target.closest('.setting-item')) {
+            saveSettings();
+            
+            // Apply specific setting changes immediately
+            if (e.target.id === 'theme-color') {
+                applyThemeColor(e.target.value);
+            } else if (e.target.id === 'language-select') {
+                applyLanguage(e.target.value);
+            } else if (e.target.id === 'animations') {
+                applyAnimations(e.target.checked);
+            }
+        }
+    });
+    
+    // Button event listeners
+    document.getElementById('change-password-btn')?.addEventListener('click', function() {
+        showChangePasswordModal();
+    });
+    
+    document.getElementById('export-data-btn')?.addEventListener('click', function() {
+        exportData();
+    });
+    
+    document.getElementById('clear-cache-btn')?.addEventListener('click', function() {
+        clearCache();
+    });
+    
+    document.getElementById('reset-settings-btn')?.addEventListener('click', function() {
+        resetSettings();
+    });
+    
+    document.getElementById('logout-btn')?.addEventListener('click', function() {
+        logout();
+    });
+}
+
+function applyThemeColor(color) {
+    const root = document.documentElement;
+    const colors = {
+        blue: '#2196F3',
+        green: '#4CAF50',
+        purple: '#9C27B0',
+        orange: '#FF9800'
+    };
+    
+    if (colors[color]) {
+        root.style.setProperty('--primary-color', colors[color]);
+        showNotification(`Tema rengi ${color} olarak değiştirildi`, 'success');
+    }
+}
+
+function applyLanguage(language) {
+    // This would need a proper i18n implementation
+    showNotification(`Dil ${language} olarak ayarlandı (Geliştirme aşamasında)`, 'info');
+}
+
+function applyAnimations(enabled) {
+    if (enabled) {
+        document.body.classList.remove('no-animations');
+    } else {
+        document.body.classList.add('no-animations');
+    }
+    showNotification(`Animasyonlar ${enabled ? 'etkinleştirildi' : 'devre dışı bırakıldı'}`, 'success');
+}
+
+function showChangePasswordModal() {
+    // This would show a password change modal
+    showNotification('Şifre değiştirme özelliği geliştirme aşamasında', 'info');
+}
+
+function exportData() {
+    try {
+        const data = {
+            settings: JSON.parse(localStorage.getItem('appSettings') || '{}'),
+            user: JSON.parse(localStorage.getItem('user') || '{}'),
+            exportDate: new Date().toISOString()
+        };
+        
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `smarthome-data-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        
+        showNotification('Veriler başarıyla dışa aktarıldı', 'success');
+    } catch (error) {
+        showNotification('Veri dışa aktarma hatası: ' + error.message, 'error');
+    }
+}
+
+function clearCache() {
+    if (confirm('Önbellek temizlenecek. Devam etmek istiyor musunuz?')) {
+        // Clear various caches
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                names.forEach(name => {
+                    caches.delete(name);
+                });
+            });
+        }
+        
+        // Clear localStorage except essential items
+        const essentialKeys = ['token', 'user'];
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (!essentialKeys.includes(key)) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        
+        showNotification('Önbellek temizlendi', 'success');
+        setTimeout(() => window.location.reload(), 1000);
+    }
+}
+
+function resetSettings() {
+    if (confirm('Tüm ayarlar sıfırlanacak. Bu işlem geri alınamaz!')) {
+        localStorage.removeItem('appSettings');
+        showNotification('Ayarlar sıfırlandı', 'success');
+        setTimeout(() => window.location.reload(), 1000);
+    }
+}
+
+async function updateSystemInfo() {
+    try {
+        // Update active devices count
+        const devices = await fetchAPI(API.devices);
+        const activeDevicesCount = devices.filter(d => d.status === 'ON' || d.isActive).length;
+        const activeDevicesElement = document.getElementById('active-devices-count');
+        if (activeDevicesElement) {
+            activeDevicesElement.textContent = `${activeDevicesCount}/${devices.length}`;
+        }
+        
+        // Update uptime (mock data for now)
+        const uptimeElement = document.getElementById('uptime');
+        if (uptimeElement) {
+            const startTime = localStorage.getItem('appStartTime') || Date.now();
+            const uptime = Date.now() - startTime;
+            const days = Math.floor(uptime / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((uptime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            uptimeElement.textContent = `${days} gün ${hours} saat`;
+        }
+        
+    } catch (error) {
+        console.error('Error updating system info:', error);
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    // Style the notification
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        animation: slideIn 0.3s ease;
+        max-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    `;
+    
+    // Set background color based on type
+    const colors = {
+        success: '#4CAF50',
+        error: '#F44336',
+        info: '#2196F3',
+        warning: '#FF9800'
+    };
+    notification.style.backgroundColor = colors[type] || colors.info;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Remove after 3 seconds
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Add CSS for notifications
+const notificationCSS = `
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+.no-animations * {
+    animation: none !important;
+    transition: none !important;
+}
+`;
+
+// Add notification styles to head
+const style = document.createElement('style');
+style.textContent = notificationCSS;
+document.head.appendChild(style);
+
+// Set app start time for uptime calculation
+if (!localStorage.getItem('appStartTime')) {
+    localStorage.setItem('appStartTime', Date.now().toString());
+}
+
+// Initialize settings when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    setupSettings();
+});
+
 // Her 30 saniyede bir istatistikleri güncelle
 setInterval(updateStats, 30000); 

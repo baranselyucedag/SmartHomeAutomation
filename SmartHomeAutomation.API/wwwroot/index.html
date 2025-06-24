@@ -138,23 +138,139 @@
                     </div>
                     <div class="settings-content">
                         <div class="settings-group">
-                            <h3>Genel Ayarlar</h3>
+                            <h3><i class="fas fa-cog"></i> Genel Ayarlar</h3>
                             <div class="setting-item">
                                 <label>Otomatik Güncelleme</label>
-                                <input type="checkbox" checked>
+                                <input type="checkbox" id="auto-update" checked>
                             </div>
                             <div class="setting-item">
                                 <label>Bildirimler</label>
-                                <input type="checkbox" checked>
+                                <input type="checkbox" id="notifications" checked>
                             </div>
                             <div class="setting-item">
-                                <label>Karanlık Tema</label>
-                                <input type="checkbox">
+                                <label>Sesli Bildirimler</label>
+                                <input type="checkbox" id="sound-notifications">
+                            </div>
+                            <div class="setting-item">
+                                <label>Otomatik Kaydetme</label>
+                                <input type="checkbox" id="auto-save" checked>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <h3><i class="fas fa-palette"></i> Görünüm Ayarları</h3>
+                            <div class="setting-item">
+                                <label>Dil</label>
+                                <select id="language-select">
+                                    <option value="tr">Türkçe</option>
+                                    <option value="en">English</option>
+                                    <option value="de">Deutsch</option>
+                                    <option value="fr">Français</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label>Tema Rengi</label>
+                                <select id="theme-color">
+                                    <option value="blue">Mavi</option>
+                                    <option value="green">Yeşil</option>
+                                    <option value="purple">Mor</option>
+                                    <option value="orange">Turuncu</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label>Animasyonlar</label>
+                                <input type="checkbox" id="animations" checked>
+                            </div>
+                            <div class="setting-item">
+                                <label>Kompakt Görünüm</label>
+                                <input type="checkbox" id="compact-view">
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <h3><i class="fas fa-shield-alt"></i> Güvenlik</h3>
+                            <div class="setting-item">
+                                <label>İki Faktörlü Doğrulama</label>
+                                <input type="checkbox" id="two-factor">
+                            </div>
+                            <div class="setting-item">
+                                <label>Otomatik Çıkış (dakika)</label>
+                                <select id="auto-logout">
+                                    <option value="15">15 dakika</option>
+                                    <option value="30" selected>30 dakika</option>
+                                    <option value="60">1 saat</option>
+                                    <option value="120">2 saat</option>
+                                    <option value="0">Hiçbir zaman</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label>Şifre Değiştir</label>
+                                <button class="secondary-btn" id="change-password-btn">Değiştir</button>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <h3><i class="fas fa-wifi"></i> Bağlantı</h3>
+                            <div class="setting-item">
+                                <label>WiFi Ağı</label>
+                                <span id="wifi-network">SmartHome_5G</span>
+                            </div>
+                            <div class="setting-item">
+                                <label>Sinyal Gücü</label>
+                                <div class="signal-strength">
+                                    <i class="fas fa-signal"></i>
+                                    <span>Güçlü (85%)</span>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <label>Otomatik Yeniden Bağlan</label>
+                                <input type="checkbox" id="auto-reconnect" checked>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <h3><i class="fas fa-clock"></i> Otomasyon</h3>
+                            <div class="setting-item">
+                                <label>Zamanlayıcı Etkin</label>
+                                <input type="checkbox" id="scheduler-enabled" checked>
+                            </div>
+                            <div class="setting-item">
+                                <label>Günlük Rapor</label>
+                                <input type="checkbox" id="daily-report">
+                            </div>
+                            <div class="setting-item">
+                                <label>Enerji Tasarrufu</label>
+                                <select id="energy-saving">
+                                    <option value="off">Kapalı</option>
+                                    <option value="low">Düşük</option>
+                                    <option value="medium" selected>Orta</option>
+                                    <option value="high">Yüksek</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="settings-group">
+                            <h3><i class="fas fa-database"></i> Veri Yönetimi</h3>
+                            <div class="setting-item">
+                                <label>Yedekleme Sıklığı</label>
+                                <select id="backup-frequency">
+                                    <option value="daily" selected>Günlük</option>
+                                    <option value="weekly">Haftalık</option>
+                                    <option value="monthly">Aylık</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label>Veri Dışa Aktar</label>
+                                <button class="secondary-btn" id="export-data-btn">Dışa Aktar</button>
+                            </div>
+                            <div class="setting-item">
+                                <label>Önbellek Temizle</label>
+                                <button class="secondary-btn" id="clear-cache-btn">Temizle</button>
                             </div>
                         </div>
                         
                         <div class="settings-group">
-                            <h3>Sistem Bilgileri</h3>
+                            <h3><i class="fas fa-info-circle"></i> Sistem Bilgileri</h3>
                             <div class="setting-item">
                                 <label>Sürüm</label>
                                 <span>v1.0.0</span>
@@ -163,12 +279,29 @@
                                 <label>Son Güncelleme</label>
                                 <span>19 Aralık 2024</span>
                             </div>
-                        </div>
-                        
-                        <div class="settings-group">
-                            <h3>Hesap</h3>
                             <div class="setting-item">
-                                <button class="danger-btn">Hesabı Sil</button>
+                                <label>Aktif Cihaz Sayısı</label>
+                                <span id="active-devices-count">-</span>
+                            </div>
+                            <div class="setting-item">
+                                <label>Sistem Durumu</label>
+                                <span class="status-online"><i class="fas fa-circle"></i> Çevrimiçi</span>
+                            </div>
+                            <div class="setting-item">
+                                <label>Çalışma Süresi</label>
+                                <span id="uptime">2 gün 14 saat</span>
+                            </div>
+                        </div>
+
+                        <div class="settings-group danger-zone">
+                            <h3><i class="fas fa-exclamation-triangle"></i> Tehlikeli Bölge</h3>
+                            <div class="setting-item">
+                                <label>Tüm Ayarları Sıfırla</label>
+                                <button class="danger-btn" id="reset-settings-btn">Sıfırla</button>
+                            </div>
+                            <div class="setting-item">
+                                <label>Çıkış Yap</label>
+                                <button class="danger-btn" id="logout-btn">Çıkış</button>
                             </div>
                         </div>
                     </div>
