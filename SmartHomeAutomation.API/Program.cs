@@ -16,6 +16,7 @@ using SmartHomeAutomation.Infrastructure.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using System.Security.Cryptography;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +51,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Add JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var secretKey = jwtSettings["SecretKey"] ?? "SmartHome-Super-Secret-Key-256-Bits-Long-For-JWT-Signing-Security";
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -59,56 +63,25 @@ builder.Services.AddAuthentication(options =>
 {
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = false,
-        ValidateAudience = false,
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings["Issuer"] ?? "SmartHomeAutomation",
+        ValidateAudience = true,
+        ValidAudience = jwtSettings["Audience"] ?? "SmartHomeAutomation",
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("your-super-secret-key-with-at-least-32-bytes"))
-    };
-    
-    // For development only - allow API access without token validation
-    options.Events = new JwtBearerEvents
-    {
-        OnAuthenticationFailed = context =>
-        {
-            // For development only - bypass authentication
-            if (builder.Environment.IsDevelopment())
-            {
-                context.NoResult();
-                context.Response.StatusCode = 200;
-                context.Success();
-            }
-            return Task.CompletedTask;
-        },
-        OnTokenValidated = context =>
-        {
-            return Task.CompletedTask;
-        },
-        OnMessageReceived = context =>
-        {
-            return Task.CompletedTask;
-        },
-        OnChallenge = context =>
-        {
-            // For development only - bypass authentication
-            if (builder.Environment.IsDevelopment())
-            {
-                context.HandleResponse();
-                context.Response.StatusCode = 200;
-            }
-            return Task.CompletedTask;
-        }
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+        ClockSkew = TimeSpan.Zero
     };
 });
 
-// Add DbContext - InMemory kullan (PostgreSQL'e geçiş için yorum açın)
+// Add DbContext - PostgreSQL
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseInMemoryDatabase("SmartHomeAutomationDb"));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    b => b.MigrationsAssembly("SmartHomeAutomation.API")));
     
-// PostgreSQL için (veritabanı çalıştığında açın):
+// InMemory için (test ortamı):
 // builder.Services.AddDbContext<ApplicationDbContext>(options =>
-//     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
-//     b => b.MigrationsAssembly("SmartHomeAutomation.API")));
+//     options.UseInMemoryDatabase("SmartHomeAutomationDb"));
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));
@@ -124,6 +97,7 @@ builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<SmartHomeAutomation.API.Services.ISceneService, SmartHomeAutomation.API.Services.SceneService>();
 builder.Services.AddSingleton<ILogService, LogService>();
 builder.Services.AddSingleton(Log.Logger);
+builder.Services.AddScoped<SmartHomeAutomation.API.Services.IJwtService, SmartHomeAutomation.API.Services.JwtService>();
 
 // Add middleware to log HTTP requests
 builder.Services.AddHttpLogging(options =>
@@ -265,7 +239,8 @@ if (app.Environment.IsDevelopment())
     {
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         
-        // Ensure database is created
+        // Ensure database is recreated for testing
+        context.Database.EnsureDeleted();
         context.Database.EnsureCreated();
         
         // Seed data if not exists
@@ -273,32 +248,31 @@ if (app.Environment.IsDevelopment())
         {
             var testUser = new User
             {
-                Id = 1,
                 Username = "testuser",
                 Email = "test@example.com",
                 FirstName = "Test",
                 LastName = "User",
-                PasswordHash = "dummy_hash",
+                PasswordHash = HashPassword("123456"),
                 PhoneNumber = "1234567890",
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
             context.Users.Add(testUser);
+            context.SaveChanges(); // Save user first to get ID
             
             var testRoom = new Room
             {
-                Id = 1,
                 Name = "Oturma Odası",
                 Description = "Ana oturma odası",
                 Floor = 1,
-                UserId = 1,
+                UserId = testUser.Id,
                 CreatedAt = DateTime.UtcNow
             };
             context.Rooms.Add(testRoom);
+            context.SaveChanges(); // Save room to get ID
             
             var testDevice = new Device
             {
-                Id = 1,
                 Name = "Akıllı Lamba",
                 Type = "LIGHT",
                 Status = "OFF",
@@ -306,34 +280,33 @@ if (app.Environment.IsDevelopment())
                 IpAddress = "192.168.1.100",
                 MacAddress = "AA:BB:CC:DD:EE:FF",
                 FirmwareVersion = "1.0.0",
-                RoomId = 1,
-                UserId = 1,
+                RoomId = testRoom.Id,
+                UserId = testUser.Id,
                 CreatedAt = DateTime.UtcNow
             };
             context.Devices.Add(testDevice);
             
             var testScene = new Scene
             {
-                Id = 1,
                 Name = "Film Gecesi",
                 Description = "Film izlemek için ideal ortam",
                 Icon = "film",
                 IsActive = true,
-                UserId = 1,
+                UserId = testUser.Id,
                 CreatedAt = DateTime.UtcNow
             };
             context.Scenes.Add(testScene);
+            context.SaveChanges(); // Save device and scene to get IDs
             
             var sceneDevice = new SceneDevice
             {
-                SceneId = 1,
-                DeviceId = 1,
+                SceneId = testScene.Id,
+                DeviceId = testDevice.Id,
                 TargetState = "ON",
                 TargetValue = "50", // 50% brightness
                 Order = 1
             };
             context.SceneDevices.Add(sceneDevice);
-            
             context.SaveChanges();
         }
     }
@@ -348,6 +321,16 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
+}
+
+static string HashPassword(string password)
+{
+    using (SHA256 sha256 = SHA256.Create())
+    {
+        byte[] bytes = Encoding.UTF8.GetBytes(password);
+        byte[] hash = sha256.ComputeHash(bytes);
+        return Convert.ToBase64String(hash);
+    }
 }
 
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)

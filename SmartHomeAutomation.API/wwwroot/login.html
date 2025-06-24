@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giriş Yap - Akıllı Ev Otomasyonu</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .auth-card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            width: 100%;
+            max-width: 450px;
+            animation: slideUp 0.6s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .auth-logo {
+            color: #667eea;
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        .auth-title {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .auth-subtitle {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #2c3e50;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .auth-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .auth-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .auth-divider {
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+        }
+        
+        .auth-divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e9ecef;
+            z-index: 1;
+        }
+        
+        .auth-divider span {
+            background: white;
+            padding: 0 15px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .auth-toggle {
+            text-align: center;
+        }
+        
+        .auth-toggle a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        
+        .auth-toggle a:hover {
+            color: #764ba2;
+        }
+        
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .alert-error {
+            background: #fee;
+            color: #c33;
+            border: 1px solid #fcc;
+        }
+        
+        .alert-success {
+            background: #efe;
+            color: #363;
+            border: 1px solid #cfc;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="fas fa-home"></i>
+            </div>
+            <h1 class="auth-title" id="auth-title">Giriş Yap</h1>
+            <p class="auth-subtitle" id="auth-subtitle">Akıllı ev sisteminize erişin</p>
+        </div>
+        
+        <div id="alert-container"></div>
+        
+        <!-- Login Form -->
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Kullanıcı Adı</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Şifre</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="auth-btn" id="login-btn">
+                <span id="login-text">Giriş Yap</span>
+            </button>
+        </form>
+        
+        <!-- Register Form -->
+        <form id="register-form" class="hidden">
+            <div class="form-group">
+                <label for="reg-username">Kullanıcı Adı</label>
+                <input type="text" id="reg-username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-email">E-posta</label>
+                <input type="email" id="reg-email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-firstname">Ad</label>
+                <input type="text" id="reg-firstname" name="firstname" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-lastname">Soyad</label>
+                <input type="text" id="reg-lastname" name="lastname" required>
+            </div>
+            <div class="form-group">
+                <label for="reg-password">Şifre</label>
+                <input type="password" id="reg-password" name="password" required>
+            </div>
+            <button type="submit" class="auth-btn" id="register-btn">
+                <span id="register-text">Kayıt Ol</span>
+            </button>
+        </form>
+        
+        <div class="auth-divider">
+            <span>veya</span>
+        </div>
+        
+        <div class="auth-toggle">
+            <a href="#" id="toggle-auth">Hesabınız yok mu? Kayıt olun</a>
+        </div>
+    </div>
+
+    <script>
+        let isLoginMode = true;
+        
+        // DOM Elements
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const authTitle = document.getElementById('auth-title');
+        const authSubtitle = document.getElementById('auth-subtitle');
+        const toggleAuth = document.getElementById('toggle-auth');
+        const alertContainer = document.getElementById('alert-container');
+        const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
+        const loginText = document.getElementById('login-text');
+        const registerText = document.getElementById('register-text');
+
+        // Toggle between login and register
+        toggleAuth.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+            
+            if (isLoginMode) {
+                loginForm.classList.remove('hidden');
+                registerForm.classList.add('hidden');
+                authTitle.textContent = 'Giriş Yap';
+                authSubtitle.textContent = 'Akıllı ev sisteminize erişin';
+                toggleAuth.textContent = 'Hesabınız yok mu? Kayıt olun';
+            } else {
+                loginForm.classList.add('hidden');
+                registerForm.classList.remove('hidden');
+                authTitle.textContent = 'Kayıt Ol';
+                authSubtitle.textContent = 'Yeni bir hesap oluşturun';
+                toggleAuth.textContent = 'Zaten hesabınız var mı? Giriş yapın';
+            }
+            
+            clearAlert();
+        });
+
+        // Show alert
+        function showAlert(message, type = 'error') {
+            alertContainer.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+        }
+
+        // Clear alert
+        function clearAlert() {
+            alertContainer.innerHTML = '';
+        }
+
+        // Show loading
+        function showLoading(isLogin) {
+            const btn = isLogin ? loginBtn : registerBtn;
+            const text = isLogin ? loginText : registerText;
+            btn.disabled = true;
+            text.innerHTML = '<span class="loading"></span>İşleniyor...';
+        }
+
+        // Hide loading
+        function hideLoading(isLogin) {
+            const btn = isLogin ? loginBtn : registerBtn;
+            const text = isLogin ? loginText : registerText;
+            btn.disabled = false;
+            text.textContent = isLogin ? 'Giriş Yap' : 'Kayıt Ol';
+        }
+
+        // Login form submit
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearAlert();
+            showLoading(true);
+            
+            const formData = new FormData(loginForm);
+            const loginData = {
+                Username: formData.get('username'),
+                Password: formData.get('password')
+            };
+
+            try {
+                const response = await fetch('/api/user/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(loginData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Save token and user info
+                    localStorage.setItem('token', result.token);
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    
+                    showAlert('Giriş başarılı! Yönlendiriliyorsunuz...', 'success');
+                    
+                    // Redirect to main page after 1 second
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                } else {
+                    showAlert(result.message || 'Giriş başarısız');
+                }
+            } catch (error) {
+                showAlert('Bağlantı hatası: ' + error.message);
+            } finally {
+                hideLoading(true);
+            }
+        });
+
+        // Register form submit
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearAlert();
+            showLoading(false);
+            
+            const formData = new FormData(registerForm);
+            const registerData = {
+                Username: formData.get('username'),
+                Email: formData.get('email'),
+                FirstName: formData.get('firstname'),
+                LastName: formData.get('lastname'),
+                Password: formData.get('password')
+            };
+
+            try {
+                const response = await fetch('/api/user/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(registerData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert('Kayıt başarılı! Şimdi giriş yapabilirsiniz.', 'success');
+                    
+                    // Switch to login form after 2 seconds
+                    setTimeout(() => {
+                        toggleAuth.click();
+                        document.getElementById('username').value = registerData.Username;
+                    }, 2000);
+                } else {
+                    showAlert(result.message || 'Kayıt başarısız');
+                }
+            } catch (error) {
+                showAlert('Bağlantı hatası: ' + error.message);
+            } finally {
+                hideLoading(false);
+            }
+        });
+
+        // Check if user is already logged in
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                window.location.href = '/';
+            }
+        });
+    </script>
+</body>
+</html> 

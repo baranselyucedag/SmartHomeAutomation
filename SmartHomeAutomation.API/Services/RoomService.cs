@@ -35,9 +35,10 @@ namespace SmartHomeAutomation.API.Services
 
         public async Task<IEnumerable<RoomDto>> GetAllRoomsAsync(int userId)
         {
-            _logger.LogInformation("Getting all rooms");
+            _logger.LogInformation("Getting all rooms for user {UserId}", userId);
 
-            var rooms = await _unitOfWork.Rooms.GetAllAsync();
+            // Sadece kullanıcının kendi odalarını döndür
+            var rooms = await _unitOfWork.Rooms.FindAsync(r => r.UserId == userId && r.IsActive);
             
             if (rooms == null)
             {
@@ -46,24 +47,9 @@ namespace SmartHomeAutomation.API.Services
             }
             
             var roomsList = rooms.ToList();
-            _logger.LogInformation("Retrieved {Count} rooms", roomsList.Count);
-            
-            // Log devices for each room
-            foreach (var room in roomsList)
-            {
-                _logger.LogInformation("Room {RoomId}: {RoomName} has {DeviceCount} devices", 
-                    room.Id, room.Name, room.Devices?.Count ?? 0);
-            }
+            _logger.LogInformation("Retrieved {Count} rooms for user {UserId}", roomsList.Count, userId);
             
             var roomDtos = _mapper.Map<IEnumerable<RoomDto>>(roomsList);
-            
-            // Log mapped DTOs
-            foreach (var roomDto in roomDtos)
-            {
-                _logger.LogInformation("RoomDto {RoomId}: {RoomName} has {DeviceCount} devices", 
-                    roomDto.Id, roomDto.Name, roomDto.Devices?.Count ?? 0);
-            }
-            
             return roomDtos;
         }
 
@@ -85,17 +71,33 @@ namespace SmartHomeAutomation.API.Services
 
         public async Task<RoomDto> CreateRoomAsync(CreateRoomDto createRoomDto, int userId)
         {
-            _logger.LogInformation("Creating new room");
+            _logger.LogInformation("Creating new room for user {UserId}", userId);
+
+            // Validation
+            if (string.IsNullOrWhiteSpace(createRoomDto.Name))
+            {
+                throw new ArgumentException("Room name is required");
+            }
 
             var room = _mapper.Map<Room>(createRoomDto);
+            
+            // Kullanıcının ID'sini set et
             room.UserId = userId;
             room.CreatedAt = DateTime.UtcNow;
             room.IsActive = true;
+            
+            // Ensure Name is not null or empty
+            if (string.IsNullOrWhiteSpace(room.Name))
+            {
+                room.Name = "Yeni Oda";
+            }
+
+            _logger.LogInformation("Creating room: Name={Name}, UserId={UserId}", room.Name, room.UserId);
 
             await _unitOfWork.Rooms.AddAsync(room);
             await _unitOfWork.SaveChangesAsync();
 
-            _logger.LogInformation("Created room {RoomId}", room.Id);
+            _logger.LogInformation("Created room {RoomId} for user {UserId}", room.Id, room.UserId);
             return _mapper.Map<RoomDto>(room);
         }
 

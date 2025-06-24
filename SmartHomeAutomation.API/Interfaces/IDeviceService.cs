@@ -6,7 +6,7 @@ namespace SmartHomeAutomation.API.Interfaces
 {
     public interface IDeviceService
     {
-        Task<IEnumerable<DeviceDto>> GetAllDevicesAsync();
+        Task<IEnumerable<DeviceDto>> GetAllDevicesAsync(int userId);
         Task<DeviceDto> GetDeviceByIdAsync(int id);
         Task<DeviceDto> CreateDeviceAsync(CreateDeviceDto createDeviceDto);
         Task<DeviceDto> UpdateDeviceAsync(int id, UpdateDeviceDto updateDeviceDto);

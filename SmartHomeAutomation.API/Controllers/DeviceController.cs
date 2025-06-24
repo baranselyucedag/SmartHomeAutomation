@@ -10,6 +10,7 @@ namespace SmartHomeAutomation.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [EnableCors("DevelopmentPolicy")]
+    [Authorize]
     public class DeviceController : ControllerBase
     {
         private readonly IDeviceService _deviceService;
@@ -23,28 +24,42 @@ namespace SmartHomeAutomation.API.Controllers
 
         private int GetUserId()
         {
-            // For development, use a default user ID
-            if (_environment.IsDevelopment())
-            {
-                return 1; // Default user ID for development
-            }
-            
-            // For production, get the user ID from claims
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // JWT claim'den userId al
+            var userIdClaim = User.FindFirst("userId")?.Value;
             if (string.IsNullOrEmpty(userIdClaim))
             {
-                throw new UnauthorizedAccessException("User ID not found in claims");
+                userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             }
             
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                Console.WriteLine("User ID not found in claims. Available claims:");
+                foreach (var claim in User.Claims)
+                {
+                    Console.WriteLine($"  {claim.Type}: {claim.Value}");
+                }
+                throw new UnauthorizedAccessException("User ID not found in token");
+            }
+            
+            Console.WriteLine($"GetUserId called - returning user ID: {userIdClaim}");
             return int.Parse(userIdClaim);
         }
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<DeviceDto>>> GetAllDevices()
         {
-            // For development purposes, get all devices
-            var devices = await _deviceService.GetAllDevicesAsync();
-            return Ok(devices);
+            try
+            {
+                var userId = GetUserId();
+                // Get only devices that belong to the current user
+                var devices = await _deviceService.GetAllDevicesAsync(userId);
+                return Ok(devices);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in GetAllDevices: {ex.Message}");
+                return StatusCode(500, new { message = ex.Message });
+            }
         }
 
         [HttpGet("{id}")]

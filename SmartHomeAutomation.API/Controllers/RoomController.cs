@@ -10,6 +10,7 @@ namespace SmartHomeAutomation.API.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [EnableCors("DevelopmentPolicy")]
+    [Authorize]
     public class RoomController : ControllerBase
     {
         private readonly IRoomService _roomService;
@@ -23,19 +24,24 @@ namespace SmartHomeAutomation.API.Controllers
 
         private int GetUserId()
         {
-            // For development, use a default user ID
-            if (_environment.IsDevelopment())
-            {
-                return 1; // Default user ID for development
-            }
-            
-            // For production, get the user ID from claims
-            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            // JWT claim'den userId al
+            var userIdClaim = User.FindFirst("userId")?.Value;
             if (string.IsNullOrEmpty(userIdClaim))
             {
-                throw new UnauthorizedAccessException("User ID not found in claims");
+                userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             }
             
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                Console.WriteLine("User ID not found in claims. Available claims:");
+                foreach (var claim in User.Claims)
+                {
+                    Console.WriteLine($"  {claim.Type}: {claim.Value}");
+                }
+                throw new UnauthorizedAccessException("User ID not found in token");
+            }
+            
+            Console.WriteLine($"GetUserId called - returning user ID: {userIdClaim}");
             return int.Parse(userIdClaim);
         }
 
@@ -95,6 +101,8 @@ namespace SmartHomeAutomation.API.Controllers
 
                 var userId = GetUserId();
                 Console.WriteLine($"UserId: {userId}");
+                
+                // UserId will be set in service layer
                 
                 var room = await _roomService.CreateRoomAsync(createRoomDto, userId);
                 Console.WriteLine($"Room created with ID: {room.Id}");

@@ -9,15 +9,26 @@ const API = {
 // API çağrıları için yardımcı fonksiyon
 async function fetchAPI(endpoint, options = {}) {
     try {
+        // JWT token'ı localStorage'dan al
+        const token = localStorage.getItem('token');
+        
         const response = await fetch(endpoint, {
             ...options,
             headers: {
                 'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` }),
                 ...options.headers
             }
         });
 
         if (!response.ok) {
+            // 401 hatası durumunda login sayfasına yönlendir
+            if (response.status === 401) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login.html';
+                return;
+            }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
@@ -29,6 +40,32 @@ async function fetchAPI(endpoint, options = {}) {
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
+    // Check if user is logged in
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    
+    if (!token || !user) {
+        // Redirect to login page if not logged in
+        window.location.href = '/login.html';
+        return;
+    }
+    
+    // Update user info in the nav
+    try {
+        const userData = JSON.parse(user);
+        const userInfo = document.querySelector('.user-info span');
+        if (userInfo) {
+            userInfo.textContent = userData.firstName || userData.username;
+        }
+        
+        const userAvatar = document.querySelector('.user-info img');
+        if (userAvatar) {
+            userAvatar.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.firstName + ' ' + userData.lastName)}&background=667eea&color=fff`;
+        }
+    } catch (error) {
+        console.error('Error parsing user data:', error);
+    }
+    
     // Sayfa yüklendiğinde verileri getir
     try {
         await loadDashboard();
@@ -197,6 +234,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Modal functionality
     setupModals();
+    
+    // Logout functionality
+    setupLogout();
     
     // Setup form submissions
     setupFormSubmissions();
@@ -817,6 +857,32 @@ function editScene(sceneId) {
 function deleteScene(sceneId) {
     if (confirm('Bu senaryoyu silmek istediğinizden emin misiniz?')) {
         alert(`Senaryo ${sceneId} silme özelliği yakında eklenecek!`);
+    }
+}
+
+// Logout functionality
+function setupLogout() {
+    // Logout buton click handler'ı zaten HTML'de onclick ile tanımlı
+    // Ek setup gerekmiyor
+    console.log('Logout functionality ready');
+}
+
+function logout() {
+    if (confirm('Çıkış yapmak istediğinize emin misiniz?')) {
+        try {
+            // Clear stored data
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            
+            // Show success message
+            alert('Başarıyla çıkış yaptınız!');
+            
+            // Redirect to login page
+            window.location.href = '/login.html';
+        } catch (error) {
+            console.error('Logout error:', error);
+            alert('Çıkış yapılırken bir hata oluştu!');
+        }
     }
 }
 

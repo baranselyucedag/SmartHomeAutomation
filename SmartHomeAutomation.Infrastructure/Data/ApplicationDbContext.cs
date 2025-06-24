@@ -23,12 +23,13 @@ namespace SmartHomeAutomation.Infrastructure.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // User configurations
+            // User configurations - Make Room-User relationship optional
             modelBuilder.Entity<User>()
                 .HasMany(u => u.Rooms)
                 .WithOne(r => r.User)
                 .HasForeignKey(r => r.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .IsRequired(false) // Make UserId nullable
+                .OnDelete(DeleteBehavior.SetNull);
 
             modelBuilder.Entity<User>()
                 .HasMany(u => u.Devices)

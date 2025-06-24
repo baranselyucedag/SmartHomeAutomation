@@ -20,9 +20,10 @@ namespace SmartHomeAutomation.API.Services
             _mapper = mapper;
         }
 
-        public async Task<IEnumerable<DeviceDto>> GetAllDevicesAsync()
+        public async Task<IEnumerable<DeviceDto>> GetAllDevicesAsync(int userId)
         {
-            var devices = await _unitOfWork.Devices.GetAllAsync();
+            // Get only devices that belong to the specific user and are active
+            var devices = await _unitOfWork.Devices.FindAsync(d => d.UserId == userId && d.IsActive);
             return _mapper.Map<IEnumerable<DeviceDto>>(devices);
         }
 
