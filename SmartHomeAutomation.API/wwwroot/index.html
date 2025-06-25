@@ -265,24 +265,32 @@
                         <div class="settings-group">
                             <h3><i class="fas fa-info-circle"></i> Sistem Bilgileri</h3>
                             <div class="setting-item">
-                                <label>Sürüm</label>
-                                <span>v1.0.0</span>
+                                <label>Uygulama Sürümü</label>
+                                <span id="app-version">v1.2.0</span>
                             </div>
                             <div class="setting-item">
-                                <label>Son Güncelleme</label>
-                                <span>19 Aralık 2024</span>
+                                <label>API Sürümü</label>
+                                <span id="api-version">-</span>
                             </div>
                             <div class="setting-item">
-                                <label>Aktif Cihaz Sayısı</label>
-                                <span id="active-devices-count">-</span>
+                                <label>Veritabanı Durumu</label>
+                                <span id="db-status" class="status-checking"><i class="fas fa-spinner fa-spin"></i> Kontrol ediliyor...</span>
                             </div>
                             <div class="setting-item">
                                 <label>Sistem Durumu</label>
-                                <span class="status-online"><i class="fas fa-circle"></i> Çevrimiçi</span>
+                                <span id="system-status" class="status-checking"><i class="fas fa-spinner fa-spin"></i> Kontrol ediliyor...</span>
+                            </div>
+                            <div class="setting-item">
+                                <label>Oturum Başlama</label>
+                                <span id="session-start">-</span>
                             </div>
                             <div class="setting-item">
                                 <label>Çalışma Süresi</label>
-                                <span id="uptime">2 gün 14 saat</span>
+                                <span id="uptime">-</span>
+                            </div>
+                            <div class="setting-item">
+                                <label>İstemci IP</label>
+                                <span id="client-ip">-</span>
                             </div>
                         </div>
                         

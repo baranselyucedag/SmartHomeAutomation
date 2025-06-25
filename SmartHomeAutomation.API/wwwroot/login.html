@@ -333,6 +333,7 @@
             const formData = new FormData(loginForm);
             const loginData = {
                 Username: formData.get('username'),
+                Email: '', // Email boş olarak gönderiliyor
                 Password: formData.get('password')
             };
 
