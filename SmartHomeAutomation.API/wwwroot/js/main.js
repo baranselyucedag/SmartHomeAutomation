@@ -894,6 +894,9 @@ function setupSettings() {
     // Setup event listeners for settings
     setupSettingsEventListeners();
     
+    // Setup auto logout listeners
+    setupAutoLogoutListeners();
+    
     // Update system info
     updateSystemInfo();
 }
@@ -912,6 +915,23 @@ function loadSettings() {
             }
         }
     });
+    
+    // Apply settings immediately
+    if (settings['theme-color']) {
+        applyThemeColor(settings['theme-color']);
+    }
+    if (settings['language-select']) {
+        applyLanguage(settings['language-select']);
+    }
+    if (settings['animations'] !== undefined) {
+        applyAnimations(settings['animations']);
+    }
+    if (settings['compact-view'] !== undefined) {
+        applyCompactView(settings['compact-view']);
+    }
+    if (settings['auto-logout'] !== undefined) {
+        applyAutoLogout(settings['auto-logout']);
+    }
 }
 
 function saveSettings() {
@@ -948,6 +968,10 @@ function setupSettingsEventListeners() {
                 applyLanguage(e.target.value);
             } else if (e.target.id === 'animations') {
                 applyAnimations(e.target.checked);
+            } else if (e.target.id === 'compact-view') {
+                applyCompactView(e.target.checked);
+            } else if (e.target.id === 'auto-logout') {
+                applyAutoLogout(e.target.value);
             }
         }
     });
@@ -1001,6 +1025,117 @@ function applyAnimations(enabled) {
         document.body.classList.add('no-animations');
     }
     showNotification(`Animasyonlar ${enabled ? 'etkinleştirildi' : 'devre dışı bırakıldı'}`, 'success');
+}
+
+function applyCompactView(enabled) {
+    if (enabled) {
+        document.body.classList.add('compact-view');
+        showNotification('Kompakt görünüm etkinleştirildi', 'success');
+    } else {
+        document.body.classList.remove('compact-view');
+        showNotification('Normal görünüm etkinleştirildi', 'success');
+    }
+}
+
+// Otomatik çıkış değişkenleri
+let autoLogoutTimer = null;
+let autoLogoutWarningTimer = null;
+let autoLogoutMinutes = 30; // Varsayılan 30 dakika
+
+function applyAutoLogout(minutes) {
+    autoLogoutMinutes = parseInt(minutes);
+    
+    // Mevcut timer'ları temizle
+    if (autoLogoutTimer) {
+        clearTimeout(autoLogoutTimer);
+        autoLogoutTimer = null;
+    }
+    if (autoLogoutWarningTimer) {
+        clearTimeout(autoLogoutWarningTimer);
+        autoLogoutWarningTimer = null;
+    }
+    
+    if (autoLogoutMinutes > 0) {
+        startAutoLogoutTimer();
+        showNotification(`Otomatik çıkış ${autoLogoutMinutes} dakika olarak ayarlandı (Popup'a 1 dk içinde yanıt verin)`, 'success');
+    } else {
+        showNotification('Otomatik çıkış devre dışı bırakıldı', 'info');
+    }
+}
+
+function startAutoLogoutTimer() {
+    if (autoLogoutMinutes <= 0) return;
+    
+    const logoutTime = autoLogoutMinutes * 60 * 1000; // Milisaniye
+    const warningTime = Math.max(logoutTime - (2 * 60 * 1000), logoutTime / 2); // 2 dakika önce veya yarı sürede uyar
+    
+    console.log(`Auto logout timer started: ${autoLogoutMinutes} minutes, warning at ${warningTime}ms, logout at ${logoutTime}ms`);
+    
+    // Uyarı timer'ı (tüm süreler için)
+    autoLogoutWarningTimer = setTimeout(() => {
+        const remainingMinutes = Math.ceil((logoutTime - warningTime) / (60 * 1000));
+        
+        // Popup'a 1 dakika (60 saniye) timeout ekle
+        let userResponse = false;
+        const popupTimeout = setTimeout(() => {
+            if (!userResponse) {
+                console.log('User did not respond to logout warning in 1 minute, forcing logout');
+                showNotification('1 dakika içinde yanıt verilmedi, çıkış yapılıyor...', 'warning');
+                setTimeout(() => {
+                    logout();
+                }, 1000);
+            }
+        }, 60000); // 1 dakika timeout
+        
+        if (confirm(`${remainingMinutes} dakika sonra otomatik olarak çıkış yapılacak. Devam etmek istiyor musunuz?\n\n(Bu mesaja 1 dakika içinde yanıt vermezseniz otomatik çıkış yapılacak)`)) {
+            userResponse = true;
+            clearTimeout(popupTimeout);
+            // Kullanıcı devam etmek istiyor, timer'ı yeniden başlat
+            resetAutoLogoutTimer();
+        } else {
+            userResponse = true;
+            clearTimeout(popupTimeout);
+            // Kullanıcı devam etmek istemiyor, hemen çıkış yap
+            showNotification('Çıkış yapılıyor...', 'warning');
+            setTimeout(() => {
+                logout();
+            }, 1000);
+        }
+    }, warningTime);
+    
+    // Ana çıkış timer'ı
+    autoLogoutTimer = setTimeout(() => {
+        console.log('Auto logout timer triggered');
+        showNotification('Otomatik çıkış yapılıyor...', 'warning');
+        setTimeout(() => {
+            console.log('Calling logout function');
+            logout();
+        }, 2000);
+    }, logoutTime);
+}
+
+function resetAutoLogoutTimer() {
+    // Timer'ları temizle ve yeniden başlat
+    console.log('Resetting auto logout timer due to user activity');
+    if (autoLogoutTimer) {
+        clearTimeout(autoLogoutTimer);
+        autoLogoutTimer = null;
+    }
+    if (autoLogoutWarningTimer) {
+        clearTimeout(autoLogoutWarningTimer);
+        autoLogoutWarningTimer = null;
+    }
+    
+    startAutoLogoutTimer();
+}
+
+// Kullanıcı aktivitesi dinleyicileri
+function setupAutoLogoutListeners() {
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+    
+    events.forEach(event => {
+        document.addEventListener(event, resetAutoLogoutTimer, true);
+    });
 }
 
 function showChangePasswordModal() {

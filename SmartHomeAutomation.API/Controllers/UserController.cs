@@ -59,7 +59,10 @@ namespace SmartHomeAutomation.API.Controllers
         {
             try
             {
-                var users = await _unitOfWork.Users.FindAsync(u => u.Username == loginDto.Username);
+                // Email veya username ile arama yap
+                var loginIdentifier = !string.IsNullOrEmpty(loginDto.Email) ? loginDto.Email : loginDto.Username;
+                var users = await _unitOfWork.Users.FindAsync(u => 
+                    u.Username == loginIdentifier || u.Email == loginIdentifier);
                 var userList = users.ToList();
                 
                 if (!userList.Any())

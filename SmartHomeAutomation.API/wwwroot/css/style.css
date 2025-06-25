@@ -811,4 +811,110 @@ main {
     font-size: 1rem;
 }
 
-/* Additional styles for better display */ 
+/* Kompakt Görünüm Stilleri */
+body.compact-view {
+    --sidebar-width: 60px;
+    --header-height: 50px;
+}
+
+body.compact-view .sidebar {
+    width: var(--sidebar-width);
+    padding: 10px;
+}
+
+body.compact-view .logo span {
+    display: none;
+}
+
+body.compact-view .nav-links a span {
+    display: none;
+}
+
+body.compact-view .nav-links a {
+    justify-content: center;
+    padding: 8px;
+}
+
+body.compact-view .user-info span {
+    display: none;
+}
+
+body.compact-view .main-content {
+    margin-left: var(--sidebar-width);
+}
+
+body.compact-view header {
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+body.compact-view .stat-card {
+    padding: 15px;
+    gap: 15px;
+}
+
+body.compact-view .stat-card i {
+    font-size: 1.5rem;
+}
+
+body.compact-view .stat-info h3 {
+    font-size: 0.9rem;
+}
+
+body.compact-view .stat-info p {
+    font-size: 1.3rem;
+}
+
+body.compact-view .room-card,
+body.compact-view .device-card,
+body.compact-view .scene-card {
+    padding: 15px;
+}
+
+body.compact-view .device-item {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+}
+
+body.compact-view .section-header {
+    margin-bottom: 15px;
+}
+
+body.compact-view .section-header h2 {
+    font-size: 1.3rem;
+}
+
+body.compact-view .quick-stats {
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+body.compact-view .rooms-overview,
+body.compact-view .scenes-overview,
+body.compact-view .devices-section {
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+body.compact-view .room-cards,
+body.compact-view .scene-cards,
+body.compact-view .device-cards {
+    gap: 15px;
+    margin-top: 15px;
+}
+
+/* Kompakt görünümde responsive ayarlar */
+@media (max-width: 768px) {
+    body.compact-view .sidebar {
+        width: 50px;
+        padding: 5px;
+    }
+    
+    body.compact-view .main-content {
+        margin-left: 50px;
+    }
+    
+    body.compact-view .nav-links a {
+        padding: 6px;
+    }
+} 

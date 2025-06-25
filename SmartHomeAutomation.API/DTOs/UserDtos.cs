@@ -22,7 +22,8 @@ namespace SmartHomeAutomation.API.DTOs
 
     public class LoginDto
     {
-        public string Username { get; set; }
+        public string Username { get; set; } // Email veya username olabilir
+        public string Email { get; set; } // Alternatif email field
         public string Password { get; set; }
     }
 
