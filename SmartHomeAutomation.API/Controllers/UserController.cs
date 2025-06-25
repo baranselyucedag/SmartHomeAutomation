@@ -1,11 +1,11 @@
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using SmartHomeAutomation.API.DTOs;
 using SmartHomeAutomation.API.Interfaces;
 using SmartHomeAutomation.Core.Entities;
 using SmartHomeAutomation.Core.Interfaces;
-using System.Security.Cryptography;
-using System.Text;
+using System.Security.Claims;
 using SmartHomeAutomation.API.Services;
 
 namespace SmartHomeAutomation.API.Controllers
@@ -17,11 +17,29 @@ namespace SmartHomeAutomation.API.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IJwtService _jwtService;
+        private readonly IAuthService _authService;
 
-        public UserController(IUnitOfWork unitOfWork, IJwtService jwtService)
+        public UserController(IUnitOfWork unitOfWork, IJwtService jwtService, IAuthService authService)
         {
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
+            _authService = authService;
+        }
+
+        private int GetUserId()
+        {
+            var userIdClaim = User.FindFirst("userId")?.Value;
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            }
+            
+            if (string.IsNullOrEmpty(userIdClaim))
+            {
+                throw new UnauthorizedAccessException("User ID not found in token");
+            }
+            
+            return int.Parse(userIdClaim);
         }
 
         [HttpGet]
@@ -59,37 +77,22 @@ namespace SmartHomeAutomation.API.Controllers
         {
             try
             {
-                // Email veya username ile arama yap
+                // AuthService'i kullan - ortak hash algoritması için
+                var token = await _authService.LoginAsync(loginDto);
+                
+                // Kullanıcı bilgilerini al
                 var loginIdentifier = !string.IsNullOrEmpty(loginDto.Email) ? loginDto.Email : loginDto.Username;
                 var users = await _unitOfWork.Users.FindAsync(u => 
                     u.Username == loginIdentifier || u.Email == loginIdentifier);
-                var userList = users.ToList();
-                
-                if (!userList.Any())
-                {
-                    return BadRequest(new { message = "Kullanıcı adı veya şifre hatalı." });
-                }
+                var user = users.First();
 
-                var user = userList.First();
-                var passwordHash = HashPassword(loginDto.Password);
-                
-                if (user.PasswordHash != passwordHash)
-                {
-                    return BadRequest(new { message = "Kullanıcı adı veya şifre hatalı." });
-                }
-
-                if (!user.IsActive)
-                {
-                    return BadRequest(new { message = "Hesabınız aktif değil." });
-                }
-
-                // Generate JWT token
-                var token = _jwtService.GenerateToken(user.Id, user.Username, user.Email);
+                // JWT token oluştur
+                var jwtToken = _jwtService.GenerateToken(user.Id, user.Username, user.Email);
 
                 return Ok(new
                 {
                     message = "Giriş başarılı",
-                    token = token,
+                    token = jwtToken,
                     user = new
                     {
                         id = user.Id,
@@ -102,7 +105,7 @@ namespace SmartHomeAutomation.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "Sunucu hatası: " + ex.Message });
+                return BadRequest(new { message = ex.Message });
             }
         }
 
@@ -123,19 +126,12 @@ namespace SmartHomeAutomation.API.Controllers
                     return BadRequest(new { message = "Bu e-posta adresi zaten kullanılıyor." });
                 }
 
-                var user = new User
-                {
-                    Username = registerDto.Username,
-                    Email = registerDto.Email,
-                    FirstName = registerDto.FirstName,
-                    LastName = registerDto.LastName,
-                    PasswordHash = HashPassword(registerDto.Password),
-                    CreatedAt = DateTime.UtcNow,
-                    IsActive = true
-                };
-
-                await _unitOfWork.Users.AddAsync(user);
-                await _unitOfWork.SaveChangesAsync();
+                // AuthService'i kullan - ortak hash algoritması için
+                var userDto = await _authService.RegisterAsync(registerDto);
+                
+                // Oluşturulan kullanıcıyı al (AuthService zaten kaydetti)
+                var users = await _unitOfWork.Users.FindAsync(u => u.Username == registerDto.Username);
+                var user = users.First();
 
                 return Ok(new
                 {
@@ -171,6 +167,37 @@ namespace SmartHomeAutomation.API.Controllers
             }
         }
 
+        [HttpPost("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+        {
+            try
+            {
+                Console.WriteLine($"Change password request received");
+                Console.WriteLine($"Request body: OldPassword={changePasswordDto?.OldPassword?.Length} chars, NewPassword={changePasswordDto?.NewPassword?.Length} chars");
+                
+                var userId = GetUserId();
+                Console.WriteLine($"User ID from token: {userId}");
+                
+                var result = await _authService.ChangePasswordAsync(userId, changePasswordDto);
+                
+                if (result)
+                {
+                    Console.WriteLine("Password change successful");
+                    return Ok(new { message = "Şifre başarıyla değiştirildi" });
+                }
+                
+                Console.WriteLine("Password change failed");
+                return BadRequest(new { message = "Şifre değiştirilemedi" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Change password error: {ex.Message}");
+                Console.WriteLine($"Stack trace: {ex.StackTrace}");
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("dev/recreate-test-user")]
         public async Task<IActionResult> RecreateTestUser()
         {
@@ -185,19 +212,21 @@ namespace SmartHomeAutomation.API.Controllers
                 await _unitOfWork.SaveChangesAsync();
 
                 // Create new test user
-                var testUser = new User
+                // AuthService ile register et - ortak hash algoritması için
+                var registerDto = new RegisterDto
                 {
                     Username = "testuser",
                     Email = "test@example.com",
                     FirstName = "Test",
                     LastName = "User",
-                    PasswordHash = HashPassword("123456"),
-                    CreatedAt = DateTime.UtcNow,
-                    IsActive = true
+                    Password = "123456"
                 };
-
-                await _unitOfWork.Users.AddAsync(testUser);
-                await _unitOfWork.SaveChangesAsync();
+                
+                var userDto = await _authService.RegisterAsync(registerDto);
+                
+                // Oluşturulan kullanıcıyı al (AuthService zaten kaydetti)
+                var users = await _unitOfWork.Users.FindAsync(u => u.Username == "testuser");
+                var testUser = users.First();
 
                 return Ok(new
                 {
@@ -221,15 +250,7 @@ namespace SmartHomeAutomation.API.Controllers
             }
         }
 
-        private string HashPassword(string password)
-        {
-            using (SHA256 sha256 = SHA256.Create())
-            {
-                byte[] bytes = Encoding.UTF8.GetBytes(password);
-                byte[] hash = sha256.ComputeHash(bytes);
-                return Convert.ToBase64String(hash);
-            }
-        }
+
 
 
 

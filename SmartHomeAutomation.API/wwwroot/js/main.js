@@ -29,7 +29,21 @@ async function fetchAPI(endpoint, options = {}) {
                 window.location.href = '/login.html';
                 return;
             }
-            throw new Error(`HTTP error! status: ${response.status}`);
+            
+            // Hata mesajını response body'den okumaya çalış
+            let errorMessage = `HTTP error! status: ${response.status}`;
+            try {
+                const errorData = await response.json();
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                } else if (errorData.Message) {
+                    errorMessage = errorData.Message;
+                }
+            } catch (e) {
+                // JSON parse hatası varsa default mesajı kullan
+            }
+            
+            throw new Error(errorMessage);
         }
 
         return await response.json();
@@ -252,9 +266,11 @@ function setupModals() {
     const addSceneBtn = document.getElementById('add-scene-btn');
     const addSceneBtn2 = document.getElementById('add-scene-btn-2');
     const addDeviceBtn = document.getElementById('add-device-btn');
+    const changePasswordBtn = document.getElementById('change-password-btn');
     const roomModal = document.getElementById('add-room-modal');
     const sceneModal = document.getElementById('add-scene-modal');
     const deviceModal = document.getElementById('add-device-modal');
+    const changePasswordModal = document.getElementById('change-password-modal');
     const closeButtons = document.querySelectorAll('.close, .cancel-btn');
     
     // Debug - element kontrolü
@@ -305,6 +321,14 @@ function setupModals() {
             deviceModal.style.display = 'block';
         });
     }
+
+    // Open change password modal
+    if (changePasswordBtn && changePasswordModal) {
+        changePasswordBtn.addEventListener('click', () => {
+            console.log('Change password modal opening...'); // Debug
+            showChangePasswordModal();
+        });
+    }
     
     // Close modals
     closeButtons.forEach(btn => {
@@ -312,6 +336,7 @@ function setupModals() {
             if (roomModal) roomModal.style.display = 'none';
             if (sceneModal) sceneModal.style.display = 'none';
             if (deviceModal) deviceModal.style.display = 'none';
+            if (changePasswordModal) changePasswordModal.style.display = 'none';
         });
     });
     
@@ -326,6 +351,9 @@ function setupModals() {
         if (e.target === deviceModal) {
             deviceModal.style.display = 'none';
         }
+        if (e.target === changePasswordModal) {
+            changePasswordModal.style.display = 'none';
+        }
     });
 }
 
@@ -334,6 +362,7 @@ function setupFormSubmissions() {
     const addRoomForm = document.getElementById('add-room-form');
     const addSceneForm = document.getElementById('add-scene-form');
     const addDeviceForm = document.getElementById('add-device-form');
+    const changePasswordForm = document.getElementById('change-password-form');
     
     // Null check ekleyelim
     if (!addRoomForm || !addSceneForm || !addDeviceForm) {
@@ -449,6 +478,36 @@ function setupFormSubmissions() {
             alert('Cihaz eklenirken bir hata oluştu: ' + error.message);
         }
     });
+
+    // Change password form submission
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const oldPassword = document.getElementById('old-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            // Client-side validation
+            if (newPassword !== confirmPassword) {
+                showNotification('Yeni şifreler eşleşmiyor', 'error');
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                showNotification('Yeni şifre en az 6 karakter olmalı', 'error');
+                return;
+            }
+            
+            const formData = {
+                oldPassword: oldPassword,
+                newPassword: newPassword,
+                confirmNewPassword: confirmPassword
+            };
+            
+            await changePassword(formData);
+        });
+    }
 }
 
 // Dashboard verilerini yükle
@@ -1139,8 +1198,38 @@ function setupAutoLogoutListeners() {
 }
 
 function showChangePasswordModal() {
-    // This would show a password change modal
-    showNotification('Şifre değiştirme özelliği geliştirme aşamasında', 'info');
+    const modal = document.getElementById('change-password-modal');
+    modal.style.display = 'block';
+    
+    // Clear form
+    document.getElementById('change-password-form').reset();
+}
+
+async function changePassword(formData) {
+    try {
+        console.log('Sending change password request:', formData);
+        console.log('API URL:', `${API.user}/change-password`);
+        
+        const response = await fetchAPI(`${API.user}/change-password`, {
+            method: 'POST',
+            body: JSON.stringify(formData)
+        });
+        
+        showNotification('Şifre başarıyla değiştirildi', 'success');
+        
+        // Close modal
+        const modal = document.getElementById('change-password-modal');
+        modal.style.display = 'none';
+        
+        // Clear form
+        document.getElementById('change-password-form').reset();
+        
+        return true;
+    } catch (error) {
+        console.error('Error changing password:', error);
+        showNotification('Şifre değiştirilemedi: ' + error.message, 'error');
+        return false;
+    }
 }
 
 function exportData() {

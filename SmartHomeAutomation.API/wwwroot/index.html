@@ -147,10 +147,7 @@
                                 <label>Bildirimler</label>
                                 <input type="checkbox" id="notifications" checked>
                             </div>
-                            <div class="setting-item">
-                                <label>Sesli Bildirimler</label>
-                                <input type="checkbox" id="sound-notifications">
-                            </div>
+
                             <div class="setting-item">
                                 <label>Otomatik Kaydetme</label>
                                 <input type="checkbox" id="auto-save" checked>
@@ -177,10 +174,7 @@
                                     <option value="orange">Turuncu</option>
                                 </select>
                             </div>
-                            <div class="setting-item">
-                                <label>Animasyonlar</label>
-                                <input type="checkbox" id="animations" checked>
-                            </div>
+
                             <div class="setting-item">
                                 <label>Kompakt Görünüm</label>
                                 <input type="checkbox" id="compact-view">
@@ -189,10 +183,7 @@
 
                         <div class="settings-group">
                             <h3><i class="fas fa-shield-alt"></i> Güvenlik</h3>
-                            <div class="setting-item">
-                                <label>İki Faktörlü Doğrulama</label>
-                                <input type="checkbox" id="two-factor">
-                            </div>
+
                             <div class="setting-item">
                                 <label>Otomatik Çıkış (dakika)</label>
                                 <select id="auto-logout">
@@ -294,7 +285,7 @@
                                 <span id="uptime">2 gün 14 saat</span>
                             </div>
                         </div>
-
+                        
                         <div class="settings-group danger-zone">
                             <h3><i class="fas fa-exclamation-triangle"></i> Tehlikeli Bölge</h3>
                             <div class="setting-item">
@@ -365,6 +356,32 @@
                 </div>
                 <div class="form-actions">
                     <button type="submit" class="primary-btn">Ekle</button>
+                    <button type="button" class="cancel-btn">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Şifre Değiştirme Modal -->
+    <div id="change-password-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Şifre Değiştir</h2>
+            <form id="change-password-form">
+                <div class="form-group">
+                    <label for="old-password">Mevcut Şifre</label>
+                    <input type="password" id="old-password" name="oldPassword" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">Yeni Şifre</label>
+                    <input type="password" id="new-password" name="newPassword" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label for="confirm-password">Yeni Şifre (Tekrar)</label>
+                    <input type="password" id="confirm-password" name="confirmNewPassword" required minlength="6">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn">Değiştir</button>
                     <button type="button" class="cancel-btn">İptal</button>
                 </div>
             </form>

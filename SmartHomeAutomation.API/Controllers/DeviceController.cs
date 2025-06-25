@@ -53,7 +53,7 @@ namespace SmartHomeAutomation.API.Controllers
                 var userId = GetUserId();
                 // Get only devices that belong to the current user
                 var devices = await _deviceService.GetAllDevicesAsync(userId);
-                return Ok(devices);
+            return Ok(devices);
             }
             catch (Exception ex)
             {

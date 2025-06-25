@@ -48,21 +48,26 @@ namespace SmartHomeAutomation.API.Services
 
         public async Task<string> LoginAsync(LoginDto loginDto)
         {
-            var users = await _unitOfWork.Users.FindAsync(u => u.Username == loginDto.Username);
-            var user = users.GetEnumerator();
+            // Email veya username ile arama yap
+            var loginIdentifier = !string.IsNullOrEmpty(loginDto.Email) ? loginDto.Email : loginDto.Username;
+            var users = await _unitOfWork.Users.FindAsync(u => 
+                u.Username == loginIdentifier || u.Email == loginIdentifier);
+            var userList = users.ToList();
             
-            if (!user.MoveNext())
+            if (!userList.Any())
             {
                 throw new Exception("Kullanıcı adı veya şifre hatalı.");
             }
 
+            var user = userList.First();
             var passwordHash = HashPassword(loginDto.Password);
-            if (user.Current.PasswordHash != passwordHash)
+            
+            if (user.PasswordHash != passwordHash)
             {
                 throw new Exception("Kullanıcı adı veya şifre hatalı.");
             }
 
-            if (!user.Current.IsActive)
+            if (!user.IsActive)
             {
                 throw new Exception("Hesabınız aktif değil.");
             }
