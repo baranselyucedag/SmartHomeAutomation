@@ -156,15 +156,7 @@
 
                         <div class="settings-group">
                             <h3><i class="fas fa-palette"></i> Görünüm Ayarları</h3>
-                            <div class="setting-item">
-                                <label>Dil</label>
-                                <select id="language-select">
-                                    <option value="tr">Türkçe</option>
-                                    <option value="en">English</option>
-                                    <option value="de">Deutsch</option>
-                                    <option value="fr">Français</option>
-                                </select>
-                            </div>
+
                             <div class="setting-item">
                                 <label>Tema Rengi</label>
                                 <select id="theme-color">
@@ -187,8 +179,6 @@
                             <div class="setting-item">
                                 <label>Otomatik Çıkış (dakika)</label>
                                 <select id="auto-logout">
-                                    <option value="1">1 dakika (Test)</option>
-                                    <option value="5">5 dakika (Test)</option>
                                     <option value="15">15 dakika</option>
                                     <option value="30" selected>30 dakika</option>
                                     <option value="60">1 saat</option>
@@ -265,24 +255,32 @@
                         <div class="settings-group">
                             <h3><i class="fas fa-info-circle"></i> Sistem Bilgileri</h3>
                             <div class="setting-item">
-                                <label>Sürüm</label>
-                                <span>v1.0.0</span>
+                                <label>Uygulama Sürümü</label>
+                                <span id="app-version">v1.2.0</span>
                             </div>
                             <div class="setting-item">
-                                <label>Son Güncelleme</label>
-                                <span>19 Aralık 2024</span>
+                                <label>API Sürümü</label>
+                                <span id="api-version">-</span>
                             </div>
                             <div class="setting-item">
-                                <label>Aktif Cihaz Sayısı</label>
-                                <span id="active-devices-count">-</span>
+                                <label>Veritabanı Durumu</label>
+                                <span id="db-status" class="status-checking"><i class="fas fa-spinner fa-spin"></i> Kontrol ediliyor...</span>
                             </div>
                             <div class="setting-item">
                                 <label>Sistem Durumu</label>
-                                <span class="status-online"><i class="fas fa-circle"></i> Çevrimiçi</span>
+                                <span id="system-status" class="status-checking"><i class="fas fa-spinner fa-spin"></i> Kontrol ediliyor...</span>
+                            </div>
+                            <div class="setting-item">
+                                <label>Oturum Başlama</label>
+                                <span id="session-start">-</span>
                             </div>
                             <div class="setting-item">
                                 <label>Çalışma Süresi</label>
-                                <span id="uptime">2 gün 14 saat</span>
+                                <span id="uptime">-</span>
+                            </div>
+                            <div class="setting-item">
+                                <label>İstemci IP</label>
+                                <span id="client-ip">-</span>
                             </div>
                         </div>
                         
@@ -435,6 +433,6 @@
         </div>
     </div>
 
-    <script src="/js/main.js?v=20241219-navigation"></script>
+    <script src="/js/main.js?v=20241219-language-cleanup"></script>
 </body>
 </html> 

@@ -78,10 +78,6 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
     b => b.MigrationsAssembly("SmartHomeAutomation.API")));
-    
-// InMemory için (test ortamı):
-// builder.Services.AddDbContext<ApplicationDbContext>(options =>
-//     options.UseInMemoryDatabase("SmartHomeAutomationDb"));
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(MappingProfile));

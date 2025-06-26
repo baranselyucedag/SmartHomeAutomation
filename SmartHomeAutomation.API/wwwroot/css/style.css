@@ -776,6 +776,37 @@ main {
     color: var(--success-color);
 }
 
+/* Signal strength status classes */
+.signal-excellent {
+    color: #4CAF50;
+    font-weight: 600;
+}
+
+.signal-good {
+    color: #8BC34A;
+    font-weight: 600;
+}
+
+.signal-medium {
+    color: #FF9800;
+    font-weight: 600;
+}
+
+.signal-weak {
+    color: #FF5722;
+    font-weight: 600;
+}
+
+.signal-none {
+    color: #F44336;
+    font-weight: 600;
+}
+
+.signal-error {
+    color: #F44336;
+    font-weight: 600;
+}
+
 .status-online {
     display: flex;
     align-items: center;
@@ -786,6 +817,34 @@ main {
 .status-online i {
     font-size: 0.8rem;
     animation: pulse 2s infinite;
+}
+
+.status-offline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--danger-color);
+}
+
+.status-checking {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--warning-color);
+}
+
+.status-error {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--danger-color);
+}
+
+.status-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--warning-color);
 }
 
 @keyframes pulse {
