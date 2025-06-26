@@ -46,7 +46,18 @@ async function fetchAPI(endpoint, options = {}) {
             throw new Error(errorMessage);
         }
 
-        return await response.json();
+        // 204 No Content için boş response kontrolü
+        if (response.status === 204 || response.headers.get('content-length') === '0') {
+            return null;
+        }
+        
+        // Content-Type kontrolü
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return await response.json();
+        }
+        
+        return null;
     } catch (error) {
         console.error('API Error:', error);
         throw error;
@@ -271,6 +282,12 @@ function setupModals() {
     const sceneModal = document.getElementById('add-scene-modal');
     const deviceModal = document.getElementById('add-device-modal');
     const changePasswordModal = document.getElementById('change-password-modal');
+    
+    // Edit modals
+    const editDeviceModal = document.getElementById('edit-device-modal');
+    const editRoomModal = document.getElementById('edit-room-modal');
+    const editSceneModal = document.getElementById('edit-scene-modal');
+    
     const closeButtons = document.querySelectorAll('.close, .cancel-btn');
     
     // Debug - element kontrolü
@@ -337,6 +354,9 @@ function setupModals() {
             if (sceneModal) sceneModal.style.display = 'none';
             if (deviceModal) deviceModal.style.display = 'none';
             if (changePasswordModal) changePasswordModal.style.display = 'none';
+            if (editDeviceModal) editDeviceModal.style.display = 'none';
+            if (editRoomModal) editRoomModal.style.display = 'none';
+            if (editSceneModal) editSceneModal.style.display = 'none';
         });
     });
     
@@ -353,6 +373,15 @@ function setupModals() {
         }
         if (e.target === changePasswordModal) {
             changePasswordModal.style.display = 'none';
+        }
+        if (e.target === editDeviceModal) {
+            editDeviceModal.style.display = 'none';
+        }
+        if (e.target === editRoomModal) {
+            editRoomModal.style.display = 'none';
+        }
+        if (e.target === editSceneModal) {
+            editSceneModal.style.display = 'none';
         }
     });
 }
@@ -508,6 +537,158 @@ function setupFormSubmissions() {
             await changePassword(formData);
         });
     }
+    
+    // Edit form submissions
+    const editDeviceForm = document.getElementById('edit-device-form');
+    const editRoomForm = document.getElementById('edit-room-form');
+    const editSceneForm = document.getElementById('edit-scene-form');
+    
+    // Edit Device form submission
+    if (editDeviceForm) {
+        editDeviceForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const deviceId = document.getElementById('edit-device-id').value;
+            const formData = {
+                id: parseInt(deviceId),
+                name: document.getElementById('edit-device-name').value,
+                type: document.getElementById('edit-device-type').value,
+                roomId: parseInt(document.getElementById('edit-device-room').value, 10),
+                ipAddress: document.getElementById('edit-device-ip').value || null,
+                macAddress: document.getElementById('edit-device-mac').value || null,
+                firmwareVersion: "1.0.0" // Default değer
+            };
+            
+            try {
+                await fetchAPI(`${API.devices}/${deviceId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(formData)
+                });
+                
+                // Close modal and refresh
+                document.getElementById('edit-device-modal').style.display = 'none';
+                await loadDashboard();
+                showNotification('Cihaz başarıyla güncellendi!', 'success');
+            } catch (error) {
+                console.error('Error updating device:', error);
+                showNotification('Cihaz güncellenirken hata oluştu: ' + error.message, 'error');
+            }
+        });
+    }
+    
+    // Edit Room form submission
+    if (editRoomForm) {
+        editRoomForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const roomId = document.getElementById('edit-room-id').value;
+            const formData = {
+                id: parseInt(roomId),
+                name: document.getElementById('edit-room-name').value,
+                description: document.getElementById('edit-room-description').value,
+                floor: parseInt(document.getElementById('edit-room-floor').value, 10)
+            };
+            
+            try {
+                await fetchAPI(`${API.rooms}/${roomId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(formData)
+                });
+                
+                // Close modal and refresh
+                document.getElementById('edit-room-modal').style.display = 'none';
+                await loadDashboard();
+                loadRoomsPage(); // Eğer rooms sayfasındaysak onu da yenile
+                showNotification('Oda başarıyla güncellendi!', 'success');
+            } catch (error) {
+                console.error('Error updating room:', error);
+                showNotification('Oda güncellenirken hata oluştu: ' + error.message, 'error');
+            }
+        });
+    }
+    
+    // Edit Scene form submission
+    if (editSceneForm) {
+        editSceneForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const sceneId = document.getElementById('edit-scene-id').value;
+            const formData = {
+                id: parseInt(sceneId),
+                name: document.getElementById('edit-scene-name').value,
+                description: document.getElementById('edit-scene-description').value,
+                icon: document.getElementById('edit-scene-icon').value,
+                sceneDevices: [] // Bu kısım daha sonra geliştirilebilir
+            };
+            
+            try {
+                await fetchAPI(`${API.scenes}/${sceneId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(formData)
+                });
+                
+                // Close modal and refresh
+                document.getElementById('edit-scene-modal').style.display = 'none';
+                await loadDashboard();
+                loadScenesPage(); // Eğer scenes sayfasındaysak onu da yenile
+                showNotification('Senaryo başarıyla güncellendi!', 'success');
+            } catch (error) {
+                console.error('Error updating scene:', error);
+                showNotification('Senaryo güncellenirken hata oluştu: ' + error.message, 'error');
+            }
+        });
+    }
+
+    // Setup event listeners for edit/delete buttons
+    setupEditDeleteListeners();
+}
+
+// Düzenleme ve silme butonları için event listener'ları kur
+function setupEditDeleteListeners() {
+    // Event delegation kullanarak dinamik olarak eklenen butonları yakala
+    document.addEventListener('click', function(e) {
+        // Cihaz düzenleme
+        if (e.target.closest('.edit-btn[data-device-id]')) {
+            e.preventDefault();
+            const deviceId = e.target.closest('.edit-btn').getAttribute('data-device-id');
+            editDevice(parseInt(deviceId));
+        }
+        
+        // Cihaz silme
+        if (e.target.closest('.delete-btn[data-device-id]')) {
+            e.preventDefault();
+            const deviceId = e.target.closest('.delete-btn').getAttribute('data-device-id');
+            deleteDevice(parseInt(deviceId));
+        }
+        
+        // Oda düzenleme
+        if (e.target.closest('.edit-btn[data-room-id]')) {
+            e.preventDefault();
+            const roomId = e.target.closest('.edit-btn').getAttribute('data-room-id');
+            editRoom(parseInt(roomId));
+        }
+        
+        // Oda silme
+        if (e.target.closest('.delete-btn[data-room-id]')) {
+            e.preventDefault();
+            const roomId = e.target.closest('.delete-btn').getAttribute('data-room-id');
+            deleteRoom(parseInt(roomId));
+        }
+        
+        // Senaryo düzenleme
+        if (e.target.closest('.edit-btn[data-scene-id]')) {
+            e.preventDefault();
+            const sceneId = e.target.closest('.edit-btn').getAttribute('data-scene-id');
+            editScene(parseInt(sceneId));
+        }
+        
+        // Senaryo silme
+        if (e.target.closest('.delete-btn[data-scene-id]')) {
+            e.preventDefault();
+            const sceneId = e.target.closest('.delete-btn').getAttribute('data-scene-id');
+            deleteScene(parseInt(sceneId));
+        }
+    });
 }
 
 // Dashboard verilerini yükle
@@ -559,6 +740,27 @@ async function loadRoomsToSelect() {
     }
 }
 
+async function loadRoomsToEditSelect() {
+    try {
+        const rooms = await fetchAPI(API.rooms);
+        console.log('Loading rooms to edit select:', rooms);
+        
+        const roomSelect = document.getElementById('edit-device-room');
+        roomSelect.innerHTML = '<option value="">Oda seçiniz</option>';
+        
+        if (rooms && rooms.length > 0) {
+            rooms.forEach(room => {
+                const option = document.createElement('option');
+                option.value = room.Id;
+                option.textContent = room.Name || 'Adsız Oda';
+                roomSelect.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading rooms to edit select:', error);
+    }
+}
+
 // Oda kartlarını güncelle
 function updateRoomsOverview(rooms) {
     console.log('Updating rooms overview with:', rooms);
@@ -594,6 +796,14 @@ function updateRoomsOverview(rooms) {
                 <div class="room-header">
                     <h3>${roomName}</h3>
                     <span class="device-count">${deviceCount} Cihaz</span>
+                    <div class="room-actions">
+                        <button class="edit-btn" data-room-id="${roomId}" title="Düzenle">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="delete-btn" data-room-id="${roomId}" title="Sil">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="room-devices">
                     ${roomDevices.length > 0 ? roomDevices.map((device, deviceIndex) => {
@@ -649,6 +859,12 @@ function updateDevicesOverview(devices) {
                     <button class="toggle-btn ${isActive ? 'active' : ''}" data-device-id="${device.Id}">
                         ${isActive ? 'Kapat' : 'Aç'}
                     </button>
+                    <button class="edit-btn" data-device-id="${device.Id}" title="Düzenle">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-btn" data-device-id="${device.Id}" title="Sil">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
         `;
@@ -686,7 +902,15 @@ function updateScenesOverview(scenes) {
             <div class="scene-card">
                 <i class="fas fa-${getSceneIcon(sceneName)}"></i>
                 <h3>${sceneName}</h3>
-                <button class="scene-trigger" data-scene-id="${sceneId}">Çalıştır</button>
+                <div class="scene-actions">
+                    <button class="scene-trigger" data-scene-id="${sceneId}">Çalıştır</button>
+                    <button class="edit-btn" data-scene-id="${sceneId}" title="Düzenle">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-btn" data-scene-id="${sceneId}" title="Sil">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
         `;
         
@@ -895,27 +1119,121 @@ async function loadScenesPage() {
     }
 }
 
-// Oda düzenleme fonksiyonu (placeholder)
-function editRoom(roomId) {
-    alert(`Oda ${roomId} düzenleme özelliği yakında eklenecek!`);
-}
-
-// Oda silme fonksiyonu (placeholder)
-function deleteRoom(roomId) {
-    if (confirm('Bu odayı silmek istediğinizden emin misiniz?')) {
-        alert(`Oda ${roomId} silme özelliği yakında eklenecek!`);
+// Cihaz düzenleme fonksiyonu
+async function editDevice(deviceId) {
+    try {
+        // Cihaz bilgilerini getir
+        const device = await fetchAPI(`${API.devices}/${deviceId}`);
+        
+        // Odaları yükle
+        await loadRoomsToEditSelect();
+        
+        // Modal formunu doldur
+        document.getElementById('edit-device-id').value = device.Id;
+        document.getElementById('edit-device-name').value = device.Name;
+        document.getElementById('edit-device-type').value = device.Type;
+        document.getElementById('edit-device-room').value = device.RoomId;
+        document.getElementById('edit-device-ip').value = device.IpAddress || '';
+        document.getElementById('edit-device-mac').value = device.MacAddress || '';
+        
+        // Modalı aç
+        document.getElementById('edit-device-modal').style.display = 'block';
+    } catch (error) {
+        console.error('Error editing device:', error);
+        showNotification('Cihaz düzenlenirken hata oluştu: ' + error.message, 'error');
     }
 }
 
-// Senaryo düzenleme fonksiyonu (placeholder)
-function editScene(sceneId) {
-    alert(`Senaryo ${sceneId} düzenleme özelliği yakında eklenecek!`);
+// Cihaz silme fonksiyonu
+async function deleteDevice(deviceId) {
+    if (confirm('Bu cihazı silmek istediğinizden emin misiniz?')) {
+        try {
+            await fetchAPI(`${API.devices}/${deviceId}`, {
+                method: 'DELETE'
+            });
+            
+            showNotification('Cihaz başarıyla silindi!', 'success');
+            loadDashboard(); // Sayfayı yenile
+        } catch (error) {
+            console.error('Error deleting device:', error);
+            showNotification('Cihaz silinirken hata oluştu: ' + error.message, 'error');
+        }
+    }
 }
 
-// Senaryo silme fonksiyonu (placeholder)
-function deleteScene(sceneId) {
+// Oda düzenleme fonksiyonu
+async function editRoom(roomId) {
+    try {
+        // Oda bilgilerini getir
+        const room = await fetchAPI(`${API.rooms}/${roomId}`);
+        
+        // Modal formunu doldur
+        document.getElementById('edit-room-id').value = room.Id;
+        document.getElementById('edit-room-name').value = room.Name;
+        document.getElementById('edit-room-description').value = room.Description || '';
+        document.getElementById('edit-room-floor').value = room.Floor || 1;
+        
+        // Modalı aç
+        document.getElementById('edit-room-modal').style.display = 'block';
+    } catch (error) {
+        console.error('Error editing room:', error);
+        showNotification('Oda düzenlenirken hata oluştu: ' + error.message, 'error');
+    }
+}
+
+// Oda silme fonksiyonu
+async function deleteRoom(roomId) {
+    if (confirm('Bu odayı silmek istediğinizden emin misiniz? Odadaki tüm cihazlar da silinecektir.')) {
+        try {
+            await fetchAPI(`${API.rooms}/${roomId}`, {
+                method: 'DELETE'
+            });
+            
+            showNotification('Oda başarıyla silindi!', 'success');
+            loadRoomsPage(); // Sayfayı yenile
+            loadDashboard(); // Dashboard'u da yenile
+        } catch (error) {
+            console.error('Error deleting room:', error);
+            showNotification('Oda silinirken hata oluştu: ' + error.message, 'error');
+        }
+    }
+}
+
+// Senaryo düzenleme fonksiyonu
+async function editScene(sceneId) {
+    try {
+        // Senaryo bilgilerini getir
+        const scene = await fetchAPI(`${API.scenes}/${sceneId}`);
+        
+        // Modal formunu doldur
+        document.getElementById('edit-scene-id').value = scene.Id;
+        document.getElementById('edit-scene-name').value = scene.Name;
+        document.getElementById('edit-scene-description').value = scene.Description || '';
+        document.getElementById('edit-scene-icon').value = scene.Icon || 'magic';
+        
+        // Modalı aç
+        document.getElementById('edit-scene-modal').style.display = 'block';
+    } catch (error) {
+        console.error('Error editing scene:', error);
+        showNotification('Senaryo düzenlenirken hata oluştu: ' + error.message, 'error');
+    }
+}
+
+// Senaryo silme fonksiyonu
+async function deleteScene(sceneId) {
     if (confirm('Bu senaryoyu silmek istediğinizden emin misiniz?')) {
-        alert(`Senaryo ${sceneId} silme özelliği yakında eklenecek!`);
+        try {
+            await fetchAPI(`${API.scenes}/${sceneId}`, {
+                method: 'DELETE'
+            });
+            
+            showNotification('Senaryo başarıyla silindi!', 'success');
+            loadScenesPage(); // Sayfayı yenile
+            loadDashboard(); // Dashboard'u da yenile
+        } catch (error) {
+            console.error('Error deleting scene:', error);
+            showNotification('Senaryo silinirken hata oluştu: ' + error.message, 'error');
+        }
     }
 }
 

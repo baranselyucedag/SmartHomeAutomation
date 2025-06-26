@@ -10,7 +10,7 @@ namespace SmartHomeAutomation.Core.Entities
         
         // Navigation properties
         public ICollection<Device> Devices { get; set; }
-        public int? UserId { get; set; }
+        public int UserId { get; set; }
         public User? User { get; set; }
 
         public Room()

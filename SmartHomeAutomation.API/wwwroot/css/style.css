@@ -199,6 +199,11 @@ header {
     margin-bottom: 15px;
 }
 
+.room-actions {
+    display: flex;
+    gap: 8px;
+}
+
 .device-count {
     background-color: var(--primary-color);
     color: white;
@@ -260,6 +265,14 @@ header {
 
 .scene-trigger:hover {
     background-color: var(--secondary-color);
+}
+
+.scene-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-top: 15px;
 }
 
 /* Responsive Design */

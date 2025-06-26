@@ -433,6 +433,115 @@
         </div>
     </div>
 
-    <script src="/js/main.js?v=20241219-language-cleanup"></script>
+    <!-- Cihaz Düzenleme Modal -->
+    <div id="edit-device-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Cihaz Düzenle</h2>
+            <form id="edit-device-form">
+                <input type="hidden" id="edit-device-id" name="id">
+                <div class="form-group">
+                    <label for="edit-device-name">Cihaz Adı</label>
+                    <input type="text" id="edit-device-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-device-type">Cihaz Türü</label>
+                    <select id="edit-device-type" name="type" required>
+                        <option value="">Seçiniz</option>
+                        <option value="LIGHT">Işık</option>
+                        <option value="TV">Televizyon</option>
+                        <option value="AC">Klima</option>
+                        <option value="THERMOSTAT">Termostat</option>
+                        <option value="SPEAKER">Hoparlör</option>
+                        <option value="CAMERA">Kamera</option>
+                        <option value="LOCK">Kilit</option>
+                        <option value="CURTAIN">Perde</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-device-room">Oda</label>
+                    <select id="edit-device-room" name="roomId" required>
+                        <option value="">Oda seçiniz</option>
+                        <!-- Odalar dinamik olarak yüklenecek -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="edit-device-ip">IP Adresi</label>
+                    <input type="text" id="edit-device-ip" name="ipAddress" placeholder="192.168.1.100">
+                </div>
+                <div class="form-group">
+                    <label for="edit-device-mac">MAC Adresi</label>
+                    <input type="text" id="edit-device-mac" name="macAddress" placeholder="AA:BB:CC:DD:EE:FF">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn">Güncelle</button>
+                    <button type="button" class="cancel-btn">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Oda Düzenleme Modal -->
+    <div id="edit-room-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Oda Düzenle</h2>
+            <form id="edit-room-form">
+                <input type="hidden" id="edit-room-id" name="id">
+                <div class="form-group">
+                    <label for="edit-room-name">Oda Adı</label>
+                    <input type="text" id="edit-room-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-room-description">Açıklama</label>
+                    <textarea id="edit-room-description" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-room-floor">Kat</label>
+                    <input type="number" id="edit-room-floor" name="floor" min="0" value="1">
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn">Güncelle</button>
+                    <button type="button" class="cancel-btn">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Senaryo Düzenleme Modal -->
+    <div id="edit-scene-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Senaryo Düzenle</h2>
+            <form id="edit-scene-form">
+                <input type="hidden" id="edit-scene-id" name="id">
+                <div class="form-group">
+                    <label for="edit-scene-name">Senaryo Adı</label>
+                    <input type="text" id="edit-scene-name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-scene-description">Açıklama</label>
+                    <textarea id="edit-scene-description" name="description" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="edit-scene-icon">İkon</label>
+                    <select id="edit-scene-icon" name="icon">
+                        <option value="moon">Gece</option>
+                        <option value="sun">Sabah</option>
+                        <option value="door-open">Çıkış</option>
+                        <option value="film">Film</option>
+                        <option value="music">Parti</option>
+                        <option value="magic">Diğer</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn">Güncelle</button>
+                    <button type="button" class="cancel-btn">İptal</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/main.js?v=20241219-fix-modal-close-buttons"></script>
 </body>
 </html> 
