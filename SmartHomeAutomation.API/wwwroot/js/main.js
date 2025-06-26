@@ -927,38 +927,258 @@ async function updateStats() {
         const devices = await fetchAPI(API.devices);
         console.log('Updating stats with devices:', devices);
         
-        // PascalCase kullanarak device kontrolü
+        // Aktif cihazları filtrele
         const activeDevices = devices.filter(d => {
             const isActive = d.Status === 'ON' || d.IsActive === true;
             console.log(`Device ${d.Name}: Status=${d.Status}, IsActive=${d.IsActive}, isActive=${isActive}`);
             return isActive;
-        }).length;
+        });
+        
         const totalDevices = devices.length;
+        const activeDeviceCount = activeDevices.length;
 
-        console.log(`Active devices: ${activeDevices}/${totalDevices}`);
+        console.log(`Active devices: ${activeDeviceCount}/${totalDevices}`);
 
         // Aktif cihazları güncelle
-        document.querySelector('.stat-card:first-child p').textContent = `${activeDevices}/${totalDevices}`;
+        document.querySelector('.stat-card:first-child p').textContent = `${activeDeviceCount}/${totalDevices}`;
 
-        // Sıcaklık (mock data)
-        const temp = (Math.random() * 5 + 20).toFixed(1);
+        // Gerçekçi sıcaklık hesaplama
+        let averageTemp = calculateAverageTemperature(activeDevices);
         
-        // Enerji tüketimi - aktif cihaz sayısına bağlı
-        // Her aktif cihaz için yaklaşık 0.5-1.2 kW tüketim
-        const baseEnergyPerDevice = 0.5;
-        const energyVariation = 0.7; // 0.5 ile 1.2 arasında
-        const energyUsage = activeDevices > 0 ? 
-            (activeDevices * (baseEnergyPerDevice + Math.random() * energyVariation)).toFixed(1) : 
-            '0.0';
+        // Gerçekçi enerji tüketimi hesaplama
+        let totalEnergyUsage = calculateEnergyUsage(activeDevices);
 
-        document.querySelector('.stat-card:nth-child(2) p').textContent = `${temp}°C`;
-        document.querySelector('.stat-card:last-child p').textContent = `${energyUsage} kW`;
+        document.querySelector('.stat-card:nth-child(2) p').textContent = `${averageTemp}°C`;
+        document.querySelector('.stat-card:last-child p').textContent = `${totalEnergyUsage} kW`;
 
-        console.log(`Stats updated - Active: ${activeDevices}/${totalDevices}, Temp: ${temp}°C, Energy: ${energyUsage} kW`);
+        console.log(`Stats updated - Active: ${activeDeviceCount}/${totalDevices}, Temp: ${averageTemp}°C, Energy: ${totalEnergyUsage} kW`);
 
     } catch (error) {
         console.error('Error updating stats:', error);
     }
+}
+
+// Ortalama sıcaklık hesaplama
+// Sıcaklık hesaplama - Tahmine dayalı akıllı sistem
+let lastTemperature = 22.0;
+let lastActiveDevices = [];
+let temperatureHistory = []; // Son 24 saatin verileri
+let deviceUsagePatterns = {}; // Cihaz kullanım kalıpları
+
+function calculateAverageTemperature(activeDevices) {
+    const currentTime = new Date();
+    const currentHour = currentTime.getHours();
+    
+    // Geçmiş verileri kaydet
+    recordTemperatureHistory(currentTime, lastTemperature, activeDevices);
+    
+    if (activeDevices.length === 0) {
+        // Tahmine dayalı: Bu saatte genelde nasıl?
+        const historicalAvg = getHistoricalAverage(currentHour);
+        const targetTemp = historicalAvg || 22.0;
+        
+        const tempDifference = targetTemp - lastTemperature;
+        const changeRate = 0.1;
+        lastTemperature += tempDifference * changeRate;
+        
+        lastActiveDevices = [];
+        return lastTemperature.toFixed(1);
+    }
+
+    // Sıcaklık etkisi olan cihazlar
+    const temperatureEffects = {
+        'AC': -2.5,         // Klima soğutur
+        'THERMOSTAT': 1.2,  // Termostat ısıtır
+        'TV': 0.15,         // TV çok hafif ısıtır
+        'LIGHT': 0.08,      // LED ışık çok az ısıtır
+        'SPEAKER': 0.05,    // Hoparlör çok az ısıtır
+        'CAMERA': 0.02,     // Kamera çok az ısıtır
+        'LOCK': 0,          // Kilit sıcaklığı etkilemez
+        'CURTAIN': 0        // Perde sıcaklığı etkilemez
+    };
+    
+    // 1. Temel hedef sıcaklık (saatlik kalıp)
+    const baseTemp = getHourlyPattern(currentHour);
+    
+    // 2. Cihaz etkilerini tahmin et
+    let predictedEffect = 0;
+    activeDevices.forEach(device => {
+        const effect = temperatureEffects[device.Type] || 0;
+        
+        // Cihazın geçmiş kullanım kalıbına göre etki hesapla
+        const usagePattern = getDeviceUsagePattern(device.Id, currentHour);
+        const adjustedEffect = effect * usagePattern.efficiencyFactor;
+        
+        predictedEffect += adjustedEffect;
+    });
+    
+    const targetTemp = baseTemp + predictedEffect;
+    
+    // 3. Cihaz durumu değişimini analiz et
+    const deviceChange = analyzeDeviceChange(activeDevices, lastActiveDevices);
+    
+    if (deviceChange.hasChanged) {
+        // Akıllı değişim hızı: Geçmiş verilere göre
+        const historicalChangeRate = getHistoricalChangeRate(deviceChange.type);
+        const tempDifference = targetTemp - lastTemperature;
+        const smartChangeRate = Math.min(historicalChangeRate, Math.abs(tempDifference) * 0.3);
+        
+        const tempChange = tempDifference * smartChangeRate;
+        lastTemperature += tempChange;
+        
+        console.log(`🔮 Tahmine dayalı: ${(lastTemperature - tempChange).toFixed(1)}°C → ${targetTemp.toFixed(1)}°C (akıllı değişim: ${tempChange.toFixed(2)}°C)`);
+    } else {
+        // Doğal dalgalanma + hedef sıcaklığa yavaş yakınlaşma
+        const naturalFluctuation = (Math.random() - 0.5) * 0.08; // ±0.04°C
+        const drift = (targetTemp - lastTemperature) * 0.03; // Çok yavaş yakınlaşma
+        
+        lastTemperature += naturalFluctuation + drift;
+    }
+    
+    // Son cihaz listesini güncelle
+    lastActiveDevices = [...activeDevices];
+    
+    // Sınırla
+    lastTemperature = Math.max(18, Math.min(28, lastTemperature));
+    
+    return lastTemperature.toFixed(1);
+}
+
+// Geçmiş veri kaydetme
+function recordTemperatureHistory(time, temp, devices) {
+    temperatureHistory.push({
+        time: time,
+        temperature: temp,
+        devices: devices.map(d => ({id: d.Id, type: d.Type})),
+        hour: time.getHours()
+    });
+    
+    // Son 24 saati tut
+    const oneDayAgo = new Date(time.getTime() - 24 * 60 * 60 * 1000);
+    temperatureHistory = temperatureHistory.filter(record => record.time > oneDayAgo);
+}
+
+// Saatlik kalıp analizi
+function getHourlyPattern(hour) {
+    const hourlyData = temperatureHistory.filter(record => record.hour === hour);
+    
+    if (hourlyData.length === 0) {
+        // Varsayılan saatlik kalıp
+        const defaultPattern = {
+            0: 21.5, 1: 21.0, 2: 20.8, 3: 20.5, 4: 20.3, 5: 20.5,
+            6: 21.0, 7: 21.5, 8: 22.0, 9: 22.2, 10: 22.5, 11: 22.8,
+            12: 23.0, 13: 23.2, 14: 23.5, 15: 23.8, 16: 23.5, 17: 23.0,
+            18: 22.5, 19: 22.3, 20: 22.0, 21: 21.8, 22: 21.5, 23: 21.3
+        };
+        return defaultPattern[hour] || 22.0;
+    }
+    
+    const avgTemp = hourlyData.reduce((sum, record) => sum + record.temperature, 0) / hourlyData.length;
+    return avgTemp;
+}
+
+// Cihaz kullanım kalıbı analizi
+function getDeviceUsagePattern(deviceId, hour) {
+    if (!deviceUsagePatterns[deviceId]) {
+        deviceUsagePatterns[deviceId] = {
+            efficiencyFactor: 1.0,
+            hourlyUsage: {},
+            totalUsage: 0
+        };
+    }
+    
+    const pattern = deviceUsagePatterns[deviceId];
+    pattern.totalUsage++;
+    pattern.hourlyUsage[hour] = (pattern.hourlyUsage[hour] || 0) + 1;
+    
+    // Sık kullanılan saatlerde verimlilik azalır (cihaz yorulur)
+    const usageFrequency = pattern.hourlyUsage[hour] / pattern.totalUsage;
+    pattern.efficiencyFactor = Math.max(0.7, 1.0 - usageFrequency * 0.3);
+    
+    return pattern;
+}
+
+// Cihaz değişim analizi
+function analyzeDeviceChange(current, previous) {
+    const currentIds = current.map(d => d.Id).sort();
+    const previousIds = previous.map(d => d.Id).sort();
+    
+    const added = currentIds.filter(id => !previousIds.includes(id));
+    const removed = previousIds.filter(id => !currentIds.includes(id));
+    
+    return {
+        hasChanged: added.length > 0 || removed.length > 0,
+        added: added,
+        removed: removed,
+        type: added.length > removed.length ? 'heating' : 'cooling'
+    };
+}
+
+// Geçmiş değişim hızı analizi
+function getHistoricalChangeRate(changeType) {
+    const relevantHistory = temperatureHistory.slice(-10); // Son 10 kayıt
+    
+    if (relevantHistory.length < 2) return 0.3; // Varsayılan
+    
+    let totalChangeRate = 0;
+    let changeCount = 0;
+    
+    for (let i = 1; i < relevantHistory.length; i++) {
+        const tempDiff = Math.abs(relevantHistory[i].temperature - relevantHistory[i-1].temperature);
+        if (tempDiff > 0.1) { // Anlamlı değişim
+            totalChangeRate += Math.min(tempDiff / 2, 0.5); // Maksimum %50
+            changeCount++;
+        }
+    }
+    
+    return changeCount > 0 ? totalChangeRate / changeCount : 0.3;
+}
+
+// Geçmiş ortalama
+function getHistoricalAverage(hour) {
+    const hourlyData = temperatureHistory.filter(record => 
+        record.hour === hour && record.devices.length === 0
+    );
+    
+    if (hourlyData.length === 0) return null;
+    
+    return hourlyData.reduce((sum, record) => sum + record.temperature, 0) / hourlyData.length;
+}
+
+// Enerji tüketimi hesaplama
+function calculateEnergyUsage(activeDevices) {
+    if (activeDevices.length === 0) {
+        return '0.0';
+    }
+    
+    // Cihaz türlerine göre gerçekçi güç tüketimleri (kW)
+    const powerConsumption = {
+        'AC': 2.5,         // Klima yüksek tüketim
+        'TV': 0.15,        // Televizyon orta tüketim
+        'THERMOSTAT': 1.8, // Termostat yüksek tüketim
+        'LIGHT': 0.06,     // LED ışık düşük tüketim
+        'SPEAKER': 0.08,   // Hoparlör düşük tüketim
+        'CAMERA': 0.02,    // Kamera çok düşük tüketim
+        'LOCK': 0.01,      // Akıllı kilit çok düşük tüketim
+        'CURTAIN': 0.05    // Motorlu perde düşük tüketim
+    };
+    
+    let totalPower = 0;
+    
+    // Her aktif cihazın güç tüketimini topla
+    activeDevices.forEach(device => {
+        const basePower = powerConsumption[device.Type] || 0.1; // Varsayılan 0.1 kW
+        
+        // ±20% varyasyon ekle (cihazların farklı modlarda çalışması)
+        const variation = 1 + (Math.random() - 0.5) * 0.4;
+        const devicePower = basePower * variation;
+        
+        totalPower += devicePower;
+        
+        console.log(`Device ${device.Name} (${device.Type}): ${devicePower.toFixed(3)} kW`);
+    });
+    
+    return totalPower.toFixed(1);
 }
 
 // Cihaz tipine göre ikon seç
