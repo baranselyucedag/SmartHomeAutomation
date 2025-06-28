@@ -16,6 +16,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Security.Cryptography;
+using SmartHomeAutomation.API.Middleware;
+using SmartHomeAutomation.API.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -94,6 +96,31 @@ builder.Services.AddSingleton<ILogService, LogService>();
 builder.Services.AddSingleton(Log.Logger);
 builder.Services.AddScoped<SmartHomeAutomation.API.Services.IJwtService, SmartHomeAutomation.API.Services.JwtService>();
 
+// Add new services
+builder.Services.AddMemoryCache();
+builder.Services.AddScoped<ICacheService, CacheService>();
+builder.Services.AddScoped<ISecurityTestService, SecurityTestService>();
+
+// Add Health Checks
+builder.Services.AddHealthChecks()
+    .AddCheck<SmartHomeAutomation.API.HealthChecks.DatabaseHealthCheck>("database");
+
+// Add API Versioning
+builder.Services.AddApiVersioning(opt =>
+{
+    opt.DefaultApiVersion = new Asp.Versioning.ApiVersion(1, 0);
+    opt.AssumeDefaultVersionWhenUnspecified = true;
+    opt.ApiVersionReader = Asp.Versioning.ApiVersionReader.Combine(
+        new Asp.Versioning.QueryStringApiVersionReader("version"),
+        new Asp.Versioning.HeaderApiVersionReader("X-Version"),
+        new Asp.Versioning.UrlSegmentApiVersionReader()
+    );
+}).AddApiExplorer(setup =>
+{
+    setup.GroupNameFormat = "'v'VVV";
+    setup.SubstituteApiVersionInUrl = true;
+});
+
 // Add middleware to log HTTP requests
 builder.Services.AddHttpLogging(options =>
 {
@@ -150,11 +177,24 @@ else
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-// HTTPS redirection'ı development ortamında devre dışı bırak
+// HTTPS redirection ve security headers
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
+    app.UseHsts(); // HTTP Strict Transport Security
 }
+
+// Security Headers Middleware
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+    context.Response.Headers["X-Frame-Options"] = "DENY";
+    context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
+    context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
+    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'";
+    
+    await next();
+});
 
 // Add middleware to handle OPTIONS requests for CORS preflight
 app.Use(async (context, next) =>
@@ -170,9 +210,16 @@ app.Use(async (context, next) =>
     await next();
 });
 
+// Add custom middleware
+app.UseMiddleware<SmartHomeAutomation.API.Middleware.RateLimitingMiddleware>();
+app.UseMiddleware<SmartHomeAutomation.API.Middleware.CsrfProtectionMiddleware>();
+
 // Add authentication middleware
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Add Health Checks endpoint
+app.MapHealthChecks("/health");
 
 app.MapControllers();
 

@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  smarthome-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5292:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=smarthome-db;Database=SmartHomeDB;Username=postgres;Password=smartpassword
+    depends_on:
+      - smarthome-db
+    networks:
+      - smarthome-network
+
+  smarthome-db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=SmartHomeDB
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=smartpassword
+    ports:
+      - "55551:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - smarthome-network
+
+volumes:
+  postgres_data:
+
+networks:
+  smarthome-network:
+    driver: bridge 

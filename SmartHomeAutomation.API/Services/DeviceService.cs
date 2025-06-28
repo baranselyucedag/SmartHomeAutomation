@@ -13,18 +13,31 @@ namespace SmartHomeAutomation.API.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly ICacheService _cacheService;
 
-        public DeviceService(IUnitOfWork unitOfWork, IMapper mapper)
+        public DeviceService(IUnitOfWork unitOfWork, IMapper mapper, ICacheService cacheService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _cacheService = cacheService;
         }
 
         public async Task<IEnumerable<DeviceDto>> GetAllDevicesAsync(int userId)
         {
+            var cacheKey = $"devices_user_{userId}";
+            var cachedDevices = await _cacheService.GetAsync<IEnumerable<DeviceDto>>(cacheKey);
+            
+            if (cachedDevices != null)
+            {
+                return cachedDevices;
+            }
+
             // Get only devices that belong to the specific user and are active
             var devices = await _unitOfWork.Devices.FindAsync(d => d.UserId == userId && d.IsActive);
-            return _mapper.Map<IEnumerable<DeviceDto>>(devices);
+            var deviceDtos = _mapper.Map<IEnumerable<DeviceDto>>(devices);
+            
+            await _cacheService.SetAsync(cacheKey, deviceDtos, TimeSpan.FromMinutes(5));
+            return deviceDtos;
         }
 
         public async Task<DeviceDto> GetDeviceByIdAsync(int id, int userId)
@@ -62,6 +75,9 @@ namespace SmartHomeAutomation.API.Services
 
             await _unitOfWork.DeviceLogs.AddAsync(deviceLog);
             await _unitOfWork.SaveChangesAsync();
+
+            // Clear cache for user devices
+            await _cacheService.RemoveByPatternAsync($"devices_user_{createDeviceDto.UserId}");
 
             return _mapper.Map<DeviceDto>(device);
         }
