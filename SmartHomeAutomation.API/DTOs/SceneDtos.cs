@@ -38,6 +38,7 @@ namespace SmartHomeAutomation.API.DTOs
     {
         public int Id { get; set; }
         public string TargetState { get; set; }
+        public string? TargetValue { get; set; }
         public int Order { get; set; }
         public int SceneId { get; set; }
         public int DeviceId { get; set; }
@@ -47,6 +48,7 @@ namespace SmartHomeAutomation.API.DTOs
     public class CreateSceneDeviceDto
     {
         public string TargetState { get; set; }
+        public string? TargetValue { get; set; }
         public int Order { get; set; }
         public int DeviceId { get; set; }
     }
@@ -54,6 +56,7 @@ namespace SmartHomeAutomation.API.DTOs
     public class UpdateSceneDeviceDto
     {
         public string TargetState { get; set; }
+        public string? TargetValue { get; set; }
         public int Order { get; set; }
         public int DeviceId { get; set; }
     }

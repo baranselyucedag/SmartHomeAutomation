@@ -158,6 +158,12 @@ namespace SmartHomeAutomation.API.Services
             var oldStatus = device.Status;
             device.Status = targetState;
             device.UpdatedAt = DateTime.UtcNow;
+            
+            // Senaryo çalıştırıldığında cihazı aktif hale getir
+            if (!device.IsActive)
+            {
+                device.IsActive = true;
+            }
 
             await _unitOfWork.Devices.UpdateAsync(device);
 

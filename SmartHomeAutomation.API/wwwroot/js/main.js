@@ -196,15 +196,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                              trigger.parentElement.querySelector('h3').textContent : 
                              'Unknown Scene';
 
-            // Debug ekleyelim
-            console.log('Scene trigger clicked:', {
-                sceneId: sceneId,
-                sceneName: sceneName,
-                attributes: Array.from(trigger.attributes).map(attr => `${attr.name}="${attr.value}"`),
-                classList: Array.from(trigger.classList),
-                innerHTML: trigger.innerHTML,
-                outerHTML: trigger.outerHTML.substring(0, 200)
-            });
+            console.log('Scene trigger clicked:', sceneName);
 
             // sceneId undefined kontrolü
             if (!sceneId || sceneId === 'undefined' || sceneId === 'null') {
@@ -219,12 +211,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             trigger.disabled = true;
 
             try {
-                console.log(`Executing scene with ID: ${sceneId}`);
                 await fetchAPI(`${API.scenes}/${sceneId}/execute`, {
                     method: 'POST'
                 });
-                console.log(`Executed scene: ${sceneName}`);
-                alert(`${sceneName} senaryosu başarıyla çalıştırıldı!`);
+                
+                // Başarılı olduğunda verileri yenile
+                await updateStats();
+                await loadDashboard();
             } catch (error) {
                 console.error('Error executing scene:', error);
                 alert(`Senaryo çalıştırılırken hata oluştu: ${error.message}`);
@@ -317,15 +310,17 @@ function setupModals() {
     
     // Open scene modal
     if (addSceneBtn && sceneModal) {
-        addSceneBtn.addEventListener('click', () => {
+        addSceneBtn.addEventListener('click', async () => {
             console.log('Scene modal opening...'); // Debug
+            await loadDevicesForSceneModal();
             sceneModal.style.display = 'block';
         });
     }
     
     if (addSceneBtn2 && sceneModal) {
-        addSceneBtn2.addEventListener('click', () => {
+        addSceneBtn2.addEventListener('click', async () => {
             console.log('Scene modal opening from scenes page...'); // Debug
+            await loadDevicesForSceneModal();
             sceneModal.style.display = 'block';
         });
     }
@@ -442,11 +437,37 @@ function setupFormSubmissions() {
     addSceneForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
+        // Collect scene devices from the form
+        const sceneDevices = [];
+        const deviceItems = document.querySelectorAll('.scene-device-item');
+        
+        deviceItems.forEach(item => {
+            const deviceId = parseInt(item.dataset.deviceId);
+            const isIncluded = item.querySelector('.device-include-checkbox').checked;
+            
+            if (isIncluded) {
+                const targetState = item.querySelector('.device-target-state').value;
+                const targetValue = item.querySelector('.device-target-value').value;
+                
+                sceneDevices.push({
+                    deviceId: deviceId,
+                    targetState: targetState,
+                    targetValue: targetValue || null,
+                    order: sceneDevices.length + 1
+                });
+            }
+        });
+        
+        if (sceneDevices.length === 0) {
+            showNotification('En az bir cihaz seçmelisiniz!', 'warning');
+            return;
+        }
+        
         const formData = {
             name: document.getElementById('scene-name').value,
             description: document.getElementById('scene-description').value,
             icon: document.getElementById('scene-icon').value,
-            sceneDevices: [] // This would need to be populated with selected devices
+            sceneDevices: sceneDevices
         };
         
         try {
@@ -463,10 +484,10 @@ function setupFormSubmissions() {
             await loadDashboard();
             
             // Show success message
-            alert('Senaryo başarıyla eklendi!');
+            showNotification('Senaryo başarıyla eklendi!', 'success');
         } catch (error) {
             console.error('Error adding scene:', error);
-            alert('Senaryo eklenirken bir hata oluştu!');
+            showNotification('Senaryo eklenirken bir hata oluştu: ' + error.message, 'error');
         }
     });
 
@@ -758,6 +779,73 @@ async function loadRoomsToEditSelect() {
         }
     } catch (error) {
         console.error('Error loading rooms to edit select:', error);
+    }
+}
+
+// Load devices for scene modal
+async function loadDevicesForSceneModal() {
+    try {
+        const devices = await fetchAPI(API.devices);
+        const sceneDevicesList = document.getElementById('scene-devices-list');
+        
+        if (sceneDevicesList && devices) {
+            if (devices.length === 0) {
+                sceneDevicesList.innerHTML = '<p class="empty-state">Henüz cihaz bulunmuyor. Önce cihaz eklemelisiniz.</p>';
+                return;
+            }
+            
+            sceneDevicesList.innerHTML = devices.map(device => {
+                const deviceIcon = getDeviceIcon(device.Type);
+                return `
+                    <div class="scene-device-item" data-device-id="${device.Id}">
+                        <div class="scene-device-header">
+                            <input type="checkbox" class="device-include-checkbox" id="device-${device.Id}">
+                            <label for="device-${device.Id}">
+                                <i class="fas fa-${deviceIcon}"></i>
+                                <strong>${device.Name}</strong> (${device.Type})
+                            </label>
+                        </div>
+                        <div class="scene-device-controls">
+                            <div class="form-group">
+                                <label>Durum</label>
+                                <select class="device-target-state">
+                                    <option value="ON">Açık</option>
+                                    <option value="OFF">Kapalı</option>
+                                    ${device.Type === 'LIGHT' ? '<option value="DIM">Karartılmış</option>' : ''}
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Değer</label>
+                                <input type="text" class="device-target-value" placeholder="${getDeviceValuePlaceholder(device.Type)}">
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+    } catch (error) {
+        console.error('Error loading devices for scene modal:', error);
+        const sceneDevicesList = document.getElementById('scene-devices-list');
+        if (sceneDevicesList) {
+            sceneDevicesList.innerHTML = '<p class="error-state">Cihazlar yüklenirken hata oluştu.</p>';
+        }
+    }
+}
+
+// Get device value placeholder based on type
+function getDeviceValuePlaceholder(deviceType) {
+    switch (deviceType) {
+        case 'LIGHT':
+            return 'Parlaklık (0-100%)';
+        case 'THERMOSTAT':
+        case 'AC':
+            return 'Sıcaklık (°C)';
+        case 'SPEAKER':
+            return 'Ses seviyesi (0-100%)';
+        case 'TV':
+            return 'Kanal veya ses';
+        default:
+            return 'Değer (opsiyonel)';
     }
 }
 
@@ -2153,3 +2241,80 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Her 30 saniyede bir istatistikleri güncelle
 setInterval(updateStats, 30000); 
+
+// Test ve geliştirme fonksiyonları
+function setupTestButtons() {
+    // Film Gecesi düzelt butonu
+    document.getElementById('fix-film-gecesi-btn')?.addEventListener('click', async () => {
+        try {
+            const response = await fetchAPI('/api/scene/fix-film-gecesi', {
+                method: 'POST'
+            });
+            
+            showNotification('Film Gecesi senaryosu başarıyla düzeltildi!', 'success');
+            await loadScenesPage(); // Senaryoları yenile
+        } catch (error) {
+            console.error('Film Gecesi düzeltme hatası:', error);
+            showNotification('Film Gecesi düzeltilirken hata oluştu: ' + error.message, 'error');
+        }
+    });
+
+    // Gerçekçi senaryolar oluştur butonu
+    document.getElementById('create-realistic-scenes-btn')?.addEventListener('click', async () => {
+        try {
+            const response = await fetchAPI('/api/scene/create-realistic-scenes', {
+                method: 'POST'
+            });
+            
+            showNotification('Gerçekçi senaryolar başarıyla oluşturuldu!', 'success');
+            await loadScenesPage(); // Senaryoları yenile
+            await loadDashboard(); // Dashboard'u yenile
+        } catch (error) {
+            console.error('Gerçekçi senaryolar oluşturma hatası:', error);
+            showNotification('Gerçekçi senaryolar oluşturulurken hata oluştu: ' + error.message, 'error');
+        }
+    });
+
+    // Tüm senaryoları test et butonu
+    document.getElementById('test-all-scenes-btn')?.addEventListener('click', async () => {
+        try {
+            const scenes = await fetchAPI(API.scenes);
+            let successCount = 0;
+            let failCount = 0;
+            
+            showNotification('Tüm senaryolar test ediliyor...', 'info');
+            
+            for (const scene of scenes) {
+                try {
+                    await fetchAPI(`/api/scene/${scene.Id}/execute`, {
+                        method: 'POST'
+                    });
+                    successCount++;
+                    console.log(`✅ ${scene.Name} senaryosu başarıyla çalıştırıldı`);
+                    
+                    // Her senaryo arasında kısa bekleme
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                } catch (error) {
+                    failCount++;
+                    console.error(`❌ ${scene.Name} senaryosu çalıştırılamadı:`, error);
+                }
+            }
+            
+            showNotification(
+                `Test tamamlandı! Başarılı: ${successCount}, Başarısız: ${failCount}`,
+                failCount === 0 ? 'success' : 'warning'
+            );
+            
+            // Cihaz durumlarını güncelle
+            await loadDashboard();
+        } catch (error) {
+            console.error('Senaryo testi hatası:', error);
+            showNotification('Senaryo testi sırasında hata oluştu: ' + error.message, 'error');
+        }
+    });
+}
+
+// Sayfa yüklendiğinde test butonlarını ayarla
+document.addEventListener('DOMContentLoaded', () => {
+    setupTestButtons();
+});

@@ -33,15 +33,9 @@ namespace SmartHomeAutomation.API.Controllers
             
             if (string.IsNullOrEmpty(userIdClaim))
             {
-                Console.WriteLine("User ID not found in claims. Available claims:");
-                foreach (var claim in User.Claims)
-                {
-                    Console.WriteLine($"  {claim.Type}: {claim.Value}");
-                }
                 throw new UnauthorizedAccessException("User ID not found in token");
             }
             
-            Console.WriteLine($"GetUserId called - returning user ID: {userIdClaim}");
             return int.Parse(userIdClaim);
         }
 
@@ -162,5 +156,7 @@ namespace SmartHomeAutomation.API.Controllers
                 return StatusCode(500, $"An error occurred while scheduling the scene: {ex.Message}");
             }
         }
+
+
     }
 } 
