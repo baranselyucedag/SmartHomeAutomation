@@ -227,22 +227,6 @@ GET /api/security/report # Güvenlik raporu
 - **Error Tracking**: Hata izleme
 - **Usage Analytics**: Kullanım istatistikleri
 
-## 🚀 Gelecek Planları
-
-### Yeni Özellikler
-- [ ] **Mobile App**: iOS/Android uygulaması
-- [ ] **Voice Control**: Sesli komut desteği
-- [ ] **Machine Learning**: Akıllı otomasyon önerileri
-- [ ] **IoT Integration**: Daha fazla cihaz desteği
-- [ ] **Real-time Notifications**: Anlık bildirimler
-
-### Teknik İyileştirmeler
-- [ ] **Microservices**: Mikroservis mimarisine geçiş
-- [ ] **Event Sourcing**: Olay tabanlı veri modeli
-- [ ] **GraphQL**: Esnek API sorguları
-- [ ] **Kubernetes**: Orkestrasyon desteği
-- [ ] **Observability**: Kapsamlı izleme
-
 ---
 
 ⭐ Bu projeyi beğendiyseniz, lütfen yıldız verin! 
