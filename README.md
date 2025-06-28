@@ -6,6 +6,9 @@ Modern ASP.NET Core Web API ile geliştirilmiş kapsamlı bir akıllı ev otomas
 
 Bu sistem, kullanıcıların evlerindeki akıllı cihazları uzaktan kontrol etmelerini, otomatik senaryolar oluşturmalarını ve enerji tüketimlerini takip etmelerini sağlar. Modern yazılım geliştirme prensiplerine uygun olarak Clean Architecture yaklaşımıyla tasarlanmıştır.
 
+**Geliştirici:** Baransel YÜCEDAĞ  
+**İletişim:** baranselyucedag@gmail.com
+
 ## 🚀 Teknolojiler ve Özellikler
 
 ### 🔧 Core Teknolojiler
@@ -240,38 +243,6 @@ GET /api/security/report # Güvenlik raporu
 - [ ] **Kubernetes**: Orkestrasyon desteği
 - [ ] **Observability**: Kapsamlı izleme
 
-## 👨‍💻 Geliştirici
-
-**Baran Selyu Çelik**
-- GitHub: [@baranselyucedag](https://github.com/baranselyucedag)
-- Email: baranselyucedag@example.com
-
-## 📄 Lisans
-
-Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakınız.
-
-## 🤝 Katkıda Bulunma
-
-Katkılarınızı memnuniyetle karşılıyoruz! Lütfen katkıda bulunmadan önce [CONTRIBUTING.md](CONTRIBUTING.md) dosyasını okuyun.
-
-### Katkı Adımları
-1. Fork edin
-2. Feature branch oluşturun (`git checkout -b feature/AmazingFeature`)
-3. Değişikliklerinizi commit edin (`git commit -m 'Add some AmazingFeature'`)
-4. Branch'inizi push edin (`git push origin feature/AmazingFeature`)
-5. Pull Request açın
-
-## 📞 Destek
-
-Sorularınız için:
-- **Issues**: GitHub Issues bölümünü kullanın
-- **Discussions**: GitHub Discussions'a katılın
-- **Email**: Doğrudan iletişim için email gönderin
-
 ---
 
-⭐ Bu projeyi beğendiyseniz, lütfen yıldız verin!
-
-**Proje Durumu**: ✅ Aktif Geliştirme  
-**Son Güncelleme**: Aralık 2024  
-**Versiyon**: v1.0.0 
+⭐ Bu projeyi beğendiyseniz, lütfen yıldız verin! 
