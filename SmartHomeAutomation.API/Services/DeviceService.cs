@@ -27,9 +27,13 @@ namespace SmartHomeAutomation.API.Services
             return _mapper.Map<IEnumerable<DeviceDto>>(devices);
         }
 
-        public async Task<DeviceDto> GetDeviceByIdAsync(int id)
+        public async Task<DeviceDto> GetDeviceByIdAsync(int id, int userId)
         {
             var device = await _unitOfWork.Devices.GetByIdAsync(id);
+            if (device == null || device.UserId != userId)
+            {
+                throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz yok.");
+            }
             return _mapper.Map<DeviceDto>(device);
         }
 
@@ -62,10 +66,13 @@ namespace SmartHomeAutomation.API.Services
             return _mapper.Map<DeviceDto>(device);
         }
 
-        public async Task<DeviceDto> UpdateDeviceAsync(int id, UpdateDeviceDto updateDeviceDto)
+        public async Task<DeviceDto> UpdateDeviceAsync(int id, UpdateDeviceDto updateDeviceDto, int userId)
         {
             var device = await _unitOfWork.Devices.GetByIdAsync(id);
-            if (device == null) return null;
+            if (device == null || device.UserId != userId)
+            {
+                throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz yok.");
+            }
 
             _mapper.Map(updateDeviceDto, device);
             device.UpdatedAt = DateTime.UtcNow;
@@ -76,10 +83,13 @@ namespace SmartHomeAutomation.API.Services
             return _mapper.Map<DeviceDto>(device);
         }
 
-        public async Task<bool> DeleteDeviceAsync(int id)
+        public async Task<bool> DeleteDeviceAsync(int id, int userId)
         {
             var device = await _unitOfWork.Devices.GetByIdAsync(id);
-            if (device == null) return false;
+            if (device == null || device.UserId != userId)
+            {
+                return false;
+            }
 
             // Silme yerine pasif hale getir
             device.IsActive = false;
@@ -91,10 +101,13 @@ namespace SmartHomeAutomation.API.Services
             return true;
         }
 
-        public async Task<DeviceStatusDto> GetDeviceStatusAsync(int id)
+        public async Task<DeviceStatusDto> GetDeviceStatusAsync(int id, int userId)
         {
             var device = await _unitOfWork.Devices.GetByIdAsync(id);
-            if (device == null) return null;
+            if (device == null || device.UserId != userId)
+            {
+                throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz yok.");
+            }
 
             return new DeviceStatusDto
             {
@@ -103,10 +116,13 @@ namespace SmartHomeAutomation.API.Services
             };
         }
 
-        public async Task<DeviceStatusDto> UpdateDeviceStatusAsync(int id, DeviceStatusDto statusDto)
+        public async Task<DeviceStatusDto> UpdateDeviceStatusAsync(int id, DeviceStatusDto statusDto, int userId)
         {
             var device = await _unitOfWork.Devices.GetByIdAsync(id);
-            if (device == null) return null;
+            if (device == null || device.UserId != userId)
+            {
+                throw new UnauthorizedAccessException("Bu cihaza erişim yetkiniz yok.");
+            }
 
             var oldStatus = device.Status;
             device.Status = statusDto.Status;

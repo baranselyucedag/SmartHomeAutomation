@@ -6,6 +6,23 @@ const API = {
     user: 'http://localhost:5292/api/user'
 };
 
+// XSS koruması için güvenli HTML encoder
+function escapeHtml(unsafe) {
+    if (unsafe === null || unsafe === undefined) return '';
+    return unsafe
+        .toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
+// Güvenli innerHTML alternativi - sadece text content için
+function safeSetText(element, text) {
+    element.textContent = text || '';
+}
+
 // API çağrıları için yardımcı fonksiyon
 async function fetchAPI(endpoint, options = {}) {
     try {

@@ -67,8 +67,13 @@ namespace SmartHomeAutomation.API.Controllers
         {
             try
             {
-                var device = await _deviceService.GetDeviceByIdAsync(id);
+                var userId = GetUserId();
+                var device = await _deviceService.GetDeviceByIdAsync(id, userId);
                 return Ok(device);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("Bu cihaza erişim yetkiniz yok.");
             }
             catch (KeyNotFoundException)
             {
@@ -79,6 +84,11 @@ namespace SmartHomeAutomation.API.Controllers
         [HttpPost]
         public async Task<ActionResult<DeviceDto>> CreateDevice([FromBody] CreateDeviceDto createDeviceDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var userId = GetUserId();
             // Set the user ID on the DTO
             createDeviceDto.UserId = userId;
@@ -90,10 +100,20 @@ namespace SmartHomeAutomation.API.Controllers
         [HttpPut("{id}")]
         public async Task<ActionResult<DeviceDto>> UpdateDevice(int id, [FromBody] UpdateDeviceDto updateDeviceDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
-                var device = await _deviceService.UpdateDeviceAsync(id, updateDeviceDto);
+                var userId = GetUserId();
+                var device = await _deviceService.UpdateDeviceAsync(id, updateDeviceDto, userId);
                 return Ok(device);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("Bu cihaza erişim yetkiniz yok.");
             }
             catch (KeyNotFoundException)
             {
@@ -106,7 +126,8 @@ namespace SmartHomeAutomation.API.Controllers
         {
             try
             {
-                var success = await _deviceService.DeleteDeviceAsync(id);
+                var userId = GetUserId();
+                var success = await _deviceService.DeleteDeviceAsync(id, userId);
                 if (success)
                 {
                     return NoContent();
@@ -124,8 +145,13 @@ namespace SmartHomeAutomation.API.Controllers
         {
             try
             {
-                var status = await _deviceService.GetDeviceStatusAsync(id);
+                var userId = GetUserId();
+                var status = await _deviceService.GetDeviceStatusAsync(id, userId);
                 return Ok(status);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("Bu cihaza erişim yetkiniz yok.");
             }
             catch (KeyNotFoundException)
             {
@@ -136,10 +162,20 @@ namespace SmartHomeAutomation.API.Controllers
         [HttpPost("{id}/status")]
         public async Task<ActionResult<DeviceStatusDto>> UpdateDeviceStatus(int id, [FromBody] DeviceStatusDto statusDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             try
             {
-                var status = await _deviceService.UpdateDeviceStatusAsync(id, statusDto);
+                var userId = GetUserId();
+                var status = await _deviceService.UpdateDeviceStatusAsync(id, statusDto, userId);
                 return Ok(status);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("Bu cihaza erişim yetkiniz yok.");
             }
             catch (KeyNotFoundException)
             {
@@ -152,12 +188,17 @@ namespace SmartHomeAutomation.API.Controllers
         {
             try
             {
-                var currentStatus = await _deviceService.GetDeviceStatusAsync(id);
+                var userId = GetUserId();
+                var currentStatus = await _deviceService.GetDeviceStatusAsync(id, userId);
                 // Toggle the online status since there's no IsActive property
                 currentStatus.Status = currentStatus.Status == "ON" ? "OFF" : "ON";
                 
-                var updatedStatus = await _deviceService.UpdateDeviceStatusAsync(id, currentStatus);
+                var updatedStatus = await _deviceService.UpdateDeviceStatusAsync(id, currentStatus, userId);
                 return Ok(updatedStatus);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return Forbid("Bu cihaza erişim yetkiniz yok.");
             }
             catch (KeyNotFoundException)
             {
