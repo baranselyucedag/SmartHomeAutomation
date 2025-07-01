@@ -8,18 +8,20 @@ using System.Security.Claims;
 namespace SmartHomeAutomation.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [EnableCors("DevelopmentPolicy")]
     [Authorize]
     public class RoomController : ControllerBase
     {
         private readonly IRoomService _roomService;
         private readonly IWebHostEnvironment _environment;
+        private readonly ILogger<RoomController> _logger;
 
-        public RoomController(IRoomService roomService, IWebHostEnvironment environment)
+        public RoomController(IRoomService roomService, IWebHostEnvironment environment, ILogger<RoomController> logger)
         {
             _roomService = roomService;
             _environment = environment;
+            _logger = logger;
         }
 
         private int GetUserId()
@@ -175,6 +177,22 @@ namespace SmartHomeAutomation.API.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error in GetRoomDevices: {ex.Message}");
+                return StatusCode(500, new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("paginated")]
+        public async Task<ActionResult<PaginationDto<RoomDto>>> GetPaginatedRooms([FromQuery] PaginationParams paginationParams)
+        {
+            try
+            {
+                var userId = GetUserId();
+                var paginatedRooms = await _roomService.GetPaginatedRoomsAsync(userId, paginationParams);
+                return Ok(paginatedRooms);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting paginated rooms");
                 return StatusCode(500, new { message = ex.Message });
             }
         }

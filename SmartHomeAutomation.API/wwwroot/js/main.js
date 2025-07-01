@@ -1,9 +1,9 @@
 // API endpoint'leri
 const API = {
-    rooms: 'http://localhost:5292/api/room',
-    devices: 'http://localhost:5292/api/device',
-    scenes: 'http://localhost:5292/api/scene',
-    user: 'http://localhost:5292/api/user'
+    rooms: 'http://localhost:5292/api/v1/room',
+    devices: 'http://localhost:5292/api/v1/device',
+    scenes: 'http://localhost:5292/api/v1/scene',
+    user: 'http://localhost:5292/api/v1/user'
 };
 
 // XSS koruması için güvenli HTML encoder

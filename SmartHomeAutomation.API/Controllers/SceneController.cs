@@ -8,7 +8,7 @@ using System.Security.Claims;
 namespace SmartHomeAutomation.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [EnableCors("DevelopmentPolicy")]
     [Authorize]
     public class SceneController : ControllerBase

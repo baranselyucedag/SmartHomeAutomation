@@ -29,4 +29,8 @@
     <ProjectReference Include="..\SmartHomeAutomation.Infrastructure\SmartHomeAutomation.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="SmartHomeAutomation.Tests" />
+  </ItemGroup>
+
 </Project>

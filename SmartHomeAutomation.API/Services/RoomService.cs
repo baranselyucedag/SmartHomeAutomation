@@ -7,6 +7,7 @@ using SmartHomeAutomation.API.DTOs;
 using SmartHomeAutomation.API.Interfaces;
 using SmartHomeAutomation.Core.Entities;
 using SmartHomeAutomation.Core.Interfaces;
+using System.Linq;
 
 namespace SmartHomeAutomation.API.Services
 {
@@ -18,6 +19,7 @@ namespace SmartHomeAutomation.API.Services
         Task<RoomDto> UpdateRoomAsync(int id, UpdateRoomDto updateRoomDto, int userId);
         Task<bool> DeleteRoomAsync(int id, int userId);
         Task<IEnumerable<RoomDto>> GetUserRoomsAsync(int userId);
+        Task<PaginationDto<RoomDto>> GetPaginatedRoomsAsync(int userId, PaginationParams paginationParams);
     }
 
     public class RoomService : IRoomService
@@ -153,6 +155,28 @@ namespace SmartHomeAutomation.API.Services
 
             _logger.LogInformation("Retrieved {Count} rooms for user {UserId}", rooms.Count(), userId);
             return _mapper.Map<IEnumerable<RoomDto>>(rooms);
+        }
+
+        public async Task<PaginationDto<RoomDto>> GetPaginatedRoomsAsync(int userId, PaginationParams paginationParams)
+        {
+            _logger.LogInformation("Getting paginated rooms for user {UserId}, Page {PageNumber}, Size {PageSize}", 
+                userId, paginationParams.PageNumber, paginationParams.PageSize);
+
+            var query = await _unitOfWork.Rooms.FindAsync(r => r.UserId == userId);
+            var count = query.Count();
+            
+            var rooms = query
+                .Skip((paginationParams.PageNumber - 1) * paginationParams.PageSize)
+                .Take(paginationParams.PageSize)
+                .ToList();
+            
+            var roomDtos = _mapper.Map<List<RoomDto>>(rooms);
+            
+            return new PaginationDto<RoomDto>(
+                roomDtos, 
+                count, 
+                paginationParams.PageNumber, 
+                paginationParams.PageSize);
         }
     }
 } 

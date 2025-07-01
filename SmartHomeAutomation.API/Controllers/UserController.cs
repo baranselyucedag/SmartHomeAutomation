@@ -11,7 +11,7 @@ using SmartHomeAutomation.API.Services;
 namespace SmartHomeAutomation.API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v1/[controller]")]
     [EnableCors("DevelopmentPolicy")]
     public class UserController : ControllerBase
     {
@@ -249,10 +249,6 @@ namespace SmartHomeAutomation.API.Controllers
                 return StatusCode(500, new { message = "Test kullanıcısı oluşturulurken hata: " + ex.Message });
             }
         }
-
-
-
-
 
         [HttpGet("{id}/preferences")]
         public async Task<IActionResult> GetUserPreferences(int id)
